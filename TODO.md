@@ -20,7 +20,7 @@ This is the **primary progress tracker**. Read it before starting any work, and 
 | ID | Item | Status |
 | --- | --- | --- |
 | [ ] `G-01` | **Owner explicitly authorizes implementation.** Record the date and where the instruction was given, here, when it happens. Until then every phase below is blocked. | Not authorized |
-| [ ] `G-02` | Choose a source-code license (decision D1 in [ARCHITECTURE.md §21](ARCHITECTURE.md#21-open-decisions)). | Open |
+| [x] `G-02` | Choose a source-code license (decision D1 in [ARCHITECTURE.md §21](ARCHITECTURE.md#21-decisions-and-open-questions)). | **Decided 2026-10-10: MIT** (owner delegated the choice) |
 | [ ] `G-03` | Approve first public release / enabling GitHub Pages (Phase 5). | Open |
 
 ---
@@ -45,8 +45,8 @@ These are documentation deliverables only. Completing them does **not** advance 
 
 - [ ] `P0-01` Add repo hygiene files: `.gitignore`, `.editorconfig`, optional `.gitattributes` (LF line endings), `.nvmrc` (current Node LTS).  
   *Done when:* files exist; `node_modules/` and `dist/` are ignored.
-- [ ] `P0-02` Add `LICENSE` per `G-02`.  
-  *Needs:* `G-02`. *Done when:* license file matches the owner's choice and README states it.
+- [x] `P0-02` Add `LICENSE` per `G-02`.  
+  *Done 2026-10-10* (completed early with the decisions PR; it is repository documentation and does not depend on `G-01`). MIT `LICENSE` present and README states it.
 - [ ] `P0-03` Scaffold a minimal Vite + vanilla TypeScript app (`index.html`, `src/main.ts`) showing a placeholder "Keyboard Studio" shell.  
   *Done when:* `npm run dev` serves the page and `npm run build` produces `dist/`.
 - [ ] `P0-04` Enable TypeScript `strict`; add `npm run typecheck`.  
@@ -61,10 +61,12 @@ These are documentation deliverables only. Completing them does **not** advance 
   *Needs:* `P0-03`–`P0-07`. *Done when:* the workflow is green on a PR and visibly **does not** publish anything.
 - [ ] `P0-09` Add a pull-request template with the documentation/TODO/verification checklist from [AGENTS.md](AGENTS.md).  
   *Done when:* new PRs show the template.
-- [ ] `P0-10` Owner/admin: enable branch protection (or a ruleset) on `main` requiring the CI checks (decision D11).  
+- [ ] `P0-10` Enable branch protection (or a ruleset) on `main`: PR required, CI checks required (decision D11; repository admin action).  
   *Needs:* `P0-08`. *Done when:* a PR cannot merge with failing checks.
 - [ ] `P0-11` Update README "Development" section with the *actual* working commands; update [ARCHITECTURE.md §20](ARCHITECTURE.md#20-current-implementation--infrastructure-status) with the real toolchain and versions.  
   *Needs:* `P0-03`–`P0-08`. *Done when:* every command in the README was run and works.
+- [ ] `P0-12` Add `.github/dependabot.yml`: grouped, monthly version updates for `npm` and `github-actions` (decision D11).  
+  *Needs:* `P0-08`. *Done when:* the file exists and the first grouped PR (if any) is reviewed like any other change.
 
 ---
 
@@ -152,17 +154,17 @@ These are documentation deliverables only. Completing them does **not** advance 
   *Needs:* `P2-04`. *Done when:* a drum layout triggers distinct percussive sounds with correct labels.
 - [ ] `P2-08` Octave shift and transpose controls; labels update live.  
   *Done when:* resolver tests and an E2E check confirm labels and pitch agree.
-- [ ] `P2-09` Scale selection and scale-lock behavior per decision D5; visible in labels.  
+- [ ] `P2-09` Scale selection and scale lock (decision D5: snap to nearest in-scale pitch, ties down; off by default); visible in labels.  
   *Done when:* tests cover representative scales and out-of-scale behavior.
 - [ ] `P2-10` Sustain (Space) with separate "sustained" visual state; correct release on sustain off.  
   *Needs:* `P1-07`. *Done when:* tests prove physical glow ends on key release while audio sustains.
-- [ ] `P2-11` Velocity simulation per decision D6.  
+- [ ] `P2-11` Velocity simulation (decision D6: fixed velocity + pointer-position velocity, no keyboard accent modifier).  
   *Done when:* velocity audibly and measurably changes gain in a test.
 - [ ] `P2-12` Master volume, ADSR and tone/filter controls.  
   *Done when:* parameter changes affect new notes without clicks.
 - [ ] `P2-13` Key remapping UI: capture mode, conflict/duplicate handling, per-key reset, text-field guard.  
   *Done when:* a remap updates labels, sound and (later) demo tabs; conflicts are explained.
-- [ ] `P2-14` Alternate layout(s) (decision D4).  
+- [ ] `P2-14` Alternate layouts "Scale rows" and "Drum pads" (decision D4, [ARCHITECTURE.md §5](ARCHITECTURE.md#5-keyboard-input-handling-and-key-mapping)).  
   *Done when:* switching layouts updates keys, labels and control bindings.
 - [ ] `P2-15` Customization panel with progressive disclosure (Quick vs. Advanced) and responsive drawer.  
   *Done when:* the keyboard stays the visual focus at all supported widths.
@@ -285,3 +287,4 @@ Not scheduled. Each item needs explicit prioritization, a justification, and an 
 ## Changelog of this tracker
 
 - 2026-10-10 — Initial TODO created from the architecture roadmap; planning documents marked done, **all implementation tasks open**.
+- 2026-10-10 — Open decisions D1–D11 resolved (see [ARCHITECTURE.md §21](ARCHITECTURE.md#21-decisions-and-open-questions)); `G-02` and `P0-02` done (MIT `LICENSE`); `P0-12` added. `G-01` and `G-03` remain owner-only.

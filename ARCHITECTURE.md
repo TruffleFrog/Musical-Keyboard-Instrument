@@ -30,7 +30,7 @@ Related documents: [README](README.md) · [Product & UI concept](docs/PRODUCT_CO
 18. [Dependencies, tradeoffs and future scalability](#18-dependencies-tradeoffs-and-future-scalability)
 19. [Phased development roadmap](#19-phased-development-roadmap)
 20. [Current implementation & infrastructure status](#20-current-implementation--infrastructure-status)
-21. [Open decisions](#21-open-decisions)
+21. [Decisions and open questions](#21-decisions-and-open-questions)
 22. [References](#22-references)
 
 ---
@@ -166,7 +166,7 @@ This is a **target** layout, not a statement of what exists:
 ├── ARCHITECTURE.md              # this document
 ├── TODO.md                      # phase checklist and acceptance gates
 ├── README.md
-├── LICENSE                      # once the owner chooses one
+├── LICENSE                      # MIT (decision D1)
 ├── docs/
 │   └── PRODUCT_CONCEPT.md       # product and UI behavior
 ├── public/                      # static assets (only rights-cleared; ideally none initially)
@@ -221,13 +221,18 @@ Allowed import direction: `ui → app → {input, audio, transport, recording} �
  controls: Space = sustain · Z / X = octave down / up · Esc = all notes off
 ```
 
-Alternate layouts (e.g. a two-row diatonic "scale rows" layout, and a drum-pad layout) are specified when Phase 2 starts. Control keys are part of a layout so they can be remapped too.
+**Alternate layouts (decision D4):**
+
+- **Scale rows** — every key is in the selected scale. Bottom row `Z X C V B N M , . /` = scale degrees 1–10; top row `Q W E R T Y U I O P` continues with degrees 11–20. No black-key gymnastics; ideal for beginners.
+- **Drum pads** — `Z X C V B N M ,` = kick, snare, closed hat, open hat, low tom, high tom, clap, crash. Only available with the percussion instrument.
+
+Control keys are part of a layout so they can be remapped too. Non-QWERTY keyboards use the same physical positions (`KeyboardEvent.code`); legends follow the Keyboard Map API where available and otherwise show the QWERTY label.
 
 ### Pitch resolution pipeline
 
 `base pitch from binding → + octave shift × 12 → + transpose → scale lock → clamp 0–127 → NoteEvent`
 
-Labels in the keyboard map are produced by the **same** resolver, so a label can never disagree with the sound. Scale-lock behaviour (snap vs. degree-mapping) is an open decision ([§21](#21-open-decisions)); whichever is chosen must be visible in the labels.
+Labels in the keyboard map are produced by the **same** resolver, so a label can never disagree with the sound. **Scale lock (decision D5):** when enabled, a resolved pitch that is not in the selected scale **snaps to the nearest in-scale pitch (ties snap down)**. The key's label shows the pitch that will actually sound, and snapped keys are marked so the behavior is visible. Scale lock is off by default; the "Scale rows" layout provides the degree-mapped alternative.
 
 ### Event rules
 
@@ -240,7 +245,7 @@ Labels in the keyboard map are produced by the **same** resolver, so a label can
 
 ### Velocity simulation
 
-Computer keys are not velocity-sensitive. Proposal: a **fixed velocity** setting (default, adjustable), plus optional pointer-position velocity on on-screen keys (strike near the front = louder), plus an optional accent modifier. Exact behavior is an open decision ([§21](#21-open-decisions)). Velocity scales gain and, for some instruments, filter brightness.
+Computer keys are not velocity-sensitive. **Decision D6:** a **fixed velocity** setting (default 100, adjustable 1–127) for physical keys, plus **pointer-position velocity** on on-screen keys (striking nearer the front/bottom of a key is louder; can be switched off). There is deliberately **no keyboard accent modifier** in the first release: Shift/Alt interact badly with typing, sticky keys and browser shortcuts. Velocity scales gain and, for some instruments, filter brightness.
 
 ### Known hardware limit
 
@@ -341,10 +346,10 @@ For each song note, the **key resolver** (the same one live input uses) finds th
 - **Controls:** play, pause, resume, stop, restart, tempo (scales BPM; both sound and visuals follow), loop. Notes that straddle the loop end are clipped at the loop boundary.
 - **Cancellation:** a `generation` token invalidates callbacks from a previous run. Stop, pause, song change, instrument change and layout change release **demo-owned** voices only — held user notes are untouched.
 - **Play-along:** user and demo notes run side by side with distinct sources; recording excludes demo notes unless "record demo / both" is chosen.
-- **Background tabs:** timers throttle; the audio clock does not. Define and document one behavior (proposal: pause the transport when the page becomes hidden, resume on request) and test it.
+- **Background tabs (decision D10):** timers throttle; the audio clock does not. The transport **pauses when the page becomes hidden** and stays paused until the user resumes it; this is covered by a test.
 - **Testability:** the transport depends on an injected `AudioClock` and an event sink, so unit tests drive a virtual clock and assert exact event times with no real audio.
 
-### Pause semantics (to confirm during Phase 3)
+### Pause semantics (decision D10)
 
 Pausing releases demo voices; resuming continues from the next note boundary and does *not* re-strike a note that was mid-flight at the pause point.
 
@@ -455,7 +460,7 @@ Feature-detect rather than user-agent-sniff: Web Audio, `MediaRecorder`, `Offlin
 - Persisted settings are untrusted input and are validated on load ([§9](#9-customization-settings-and-local-persistence)). If MIDI/song import is added later, bound file size, track/event counts and values.
 - Object URLs are revoked after export; no sensitive data is needed to play a note.
 - Dependencies are minimal and lockfile-pinned; CI runs on every PR; review security advisories before upgrades.
-- **Licensing:** every built-in song and any sound asset records provenance and redistribution rights. Prefer public-domain melodies **encoded by hand as original data** over importing third-party MIDI/recordings of unknown license. Synthesized sounds avoid sample-pack licensing entirely. A source-code license for the repository is **not yet chosen** ([§21](#21-open-decisions)).
+- **Licensing:** every built-in song and any sound asset records provenance and redistribution rights. Prefer public-domain melodies **encoded by hand as original data** over importing third-party MIDI/recordings of unknown license. Synthesized sounds avoid sample-pack licensing entirely. The repository's source code is licensed under the **MIT License** (decision D1; see `LICENSE`). Third-party song and sound material is licensed separately and must record its own provenance.
 
 ---
 
@@ -600,32 +605,35 @@ At the start of each phase, pick an implementable vertical slice and its test pl
 | Dependabot version updates (`dependabot.yml`) | **Not configured** |
 | Dependabot alerts / security updates | **Disabled** (no dependencies exist yet) |
 | Secret scanning and push protection | **Enabled** (GitHub-side default for this public repository) |
-| Source-code license | **Not chosen** |
+| Source-code license | **MIT** (decision D1, 2026-10-10); `LICENSE` file present |
 | Issues | None exist (feature is enabled); no project board has been set up |
 
 When implementation or infrastructure changes, update this section in the **same PR** and link the PR. Do not rewrite long-term decisions elsewhere merely to match an incomplete feature.
 
 ---
 
-## 21. Open decisions
+## 21. Decisions and open questions
 
-| # | Decision | Needed by | Default if unspecified |
-| --- | --- | --- | --- |
-| D1 | Source-code license (MIT / Apache-2.0 / other) | Before accepting outside contributions, Phase 0 | None until owner chooses — do not assume |
-| D2 | Final instrument roster and percussion sound source | Phase 2 | Synthesized piano-like, synth, bass, chiptune, drums |
-| D3 | Native Web Audio vs. Tone.js | Phase 1, after prototyping | Native Web Audio |
-| D4 | Default and alternate layouts; how non-QWERTY keyboards are presented | Phase 1–2 | Piano "musical typing" layout (§5), codes + display legends |
-| D5 | Scale-lock semantics (snap to nearest vs. map keys to scale degrees) | Phase 2 | Snap, with visible labels |
-| D6 | Velocity simulation scheme | Phase 2 | Fixed velocity + optional pointer-position velocity |
-| D7 | Mobile/touch scope and minimum viable small-screen experience | Phase 5 | Horizontal scroll / compact view, best effort |
-| D8 | Audio export formats shipped given browser differences | Phase 4 | MIDI always; audio in the format `MediaRecorder` supports, optional offline WAV |
-| D9 | Hosting activation, public URL, and release cadence | Phase 5 | Manual GitHub Pages only |
-| D10 | Background-tab and pause/resume behavior details | Phase 3 | Pause on hide; resume continues at next note boundary |
-| D11 | Enable branch protection / required checks and Dependabot | Phase 0 | Recommended; owner/admin action |
+The repository owner delegated the open decisions D1–D11 to the assistant on **2026-10-10**; they are recorded below as **decided**. All are reversible by a documented PR (state date, reason, alternatives and evidence). Decisions that depend on measurement are marked *revisit*.
 
-Record any significant reversal with date, reason, alternatives and observed evidence rather than silently editing history.
+| # | Decision | Outcome | Status | Revisit when |
+| --- | --- | --- | --- | --- |
+| D1 | Source-code license | **MIT**. Simple, permissive, well understood; suits a portfolio/open-source project | Decided | Only if the owner wants copyleft or patent terms (Apache-2.0) |
+| D2 | Instrument roster and percussion source | Synthesized piano-like, synth, bass, chiptune (Phase 2) and drums/percussion; **no sample packs** | Decided | If synthesized piano is judged inadequate → licensed samples (Phase 6) |
+| D3 | Native Web Audio vs. Tone.js | **Native Web Audio**; Tone.js not used | Decided | Only on measured evidence that scheduling/instrument work is too costly |
+| D4 | Layouts and non-QWERTY presentation | Default **Piano (musical typing)**; alternates **Scale rows** and **Drum pads** (§5); bindings by `KeyboardEvent.code`, legends via Keyboard Map API when available | Decided | Phase 6 adds AZERTY/QWERTZ-specific layouts |
+| D5 | Scale-lock semantics | **Snap to nearest in-scale pitch, ties snap down**; label shows sounding pitch; off by default | Decided | After usability testing in Phase 2 |
+| D6 | Velocity simulation | Fixed velocity (default 100) + pointer-position velocity; **no keyboard accent modifier** | Decided | If users ask for physical-key dynamics |
+| D7 | Mobile/touch scope | **Best effort**: tablets fully supported via touch; phones get a compact/scrollable keyboard; not a release blocker | Decided | Phase 5 device testing |
+| D8 | Export formats | **MIDI always**; audio via `MediaRecorder` in the browser-supported container (extension shown); offline **WAV** is optional (`P4-09`) | Decided | Phase 4 browser-matrix results |
+| D9 | Hosting and release cadence | **GitHub Pages, manual `workflow_dispatch` deploy only**; no auto-deploy, previews or custom domain. *Activation still requires owner approval (`G-03`)* | Decided (activation gated) | If the owner prefers another static host |
+| D10 | Background-tab and pause/resume behavior | **Pause on hidden; resume from next note boundary; no re-strike** (§8) | Decided | Phase 3 manual testing |
+| D11 | Branch protection and dependency automation | After CI exists (`P0-08`): protect `main` (PR + required CI checks); enable Dependabot **grouped, monthly** updates for npm and GitHub Actions, reviewed like any PR | Decided (action deferred until CI exists) | If it creates review noise |
 
----
+### Still owner-only (not decisions the assistant may take)
+
+- **`G-01`** — authorize implementation. Until the owner says so, work stays documentation-only.
+- **`G-03`** — approve the first public release / enabling GitHub Pages.
 
 ## 22. References
 

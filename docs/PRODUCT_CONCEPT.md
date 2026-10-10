@@ -82,7 +82,7 @@ The interface should **expose and organize all major options**, while clearly in
 | Instrument | Piano, synth, bass, drums/percussion, chiptune, and additional sound presets | Presets should sound meaningfully different; percussion needs per-key sample/sound mapping rather than pitched waveforms |
 | Keyboard mapping | Default layout, alternate layouts, custom key-to-note remapping, reset | Prevent conflicting mappings or clearly explain them |
 | Notes | Octave up/down, transpose, note labels, scale selection/lock | Scale lock behavior should be predictable and visible |
-| Performance | Polyphony/chords, sustain, velocity/emphasis simulation | Support holding several keys simultaneously. Computer keys are not velocity-sensitive, so *velocity simulation* means a user-set fixed loudness, optionally varied by where an on-screen key is struck or by an accent modifier (see ARCHITECTURE.md decision D6) |
+| Performance | Polyphony/chords, sustain, velocity/emphasis simulation | Support holding several keys simultaneously. Computer keys are not velocity-sensitive, so *velocity simulation* means a user-set fixed loudness, optionally varied by where an on-screen key is struck (see ARCHITECTURE.md decision D6) |
 | Sound shaping | Master volume, attack, decay, sustain level, release, tone/filter, reverb, delay/echo | Keep advanced controls behind an expandable section |
 | Timing | Metronome on/off, BPM, time signature (later) | Avoid intrusive metronome by default |
 | Appearance | Key label mode, demo highlighting, optional light/dark theme | Visual accessibility first |

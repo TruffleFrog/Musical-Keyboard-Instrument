@@ -75,4 +75,4 @@ Development has not begun, so there is no build to run yet.
 
 ## License
 
-No license has been selected yet. A license should be chosen before inviting third-party code contributions or using third-party sound/sample assets.
+The source code in this repository is licensed under the [MIT License](LICENSE). Any third-party songs or sound assets added later will carry their own recorded provenance and licenses.
