@@ -1,6 +1,8 @@
 # Keyboard Studio — Product & UI Concept
 
 > **Status: planning only.** This document is a refined product idea, not an implementation plan approved for coding. No application has been built.
+>
+> Related: [Architecture & roadmap](../ARCHITECTURE.md) · [TODO / progress tracker](../TODO.md) · [Agent rules](../AGENTS.md) · [README](../README.md)
 
 ## 1. Core idea
 
@@ -80,7 +82,7 @@ The interface should **expose and organize all major options**, while clearly in
 | Instrument | Piano, synth, bass, drums/percussion, chiptune, and additional sound presets | Presets should sound meaningfully different; percussion needs per-key sample/sound mapping rather than pitched waveforms |
 | Keyboard mapping | Default layout, alternate layouts, custom key-to-note remapping, reset | Prevent conflicting mappings or clearly explain them |
 | Notes | Octave up/down, transpose, note labels, scale selection/lock | Scale lock behavior should be predictable and visible |
-| Performance | Polyphony/chords, sustain, velocity/emphasis simulation | Support holding several keys simultaneously |
+| Performance | Polyphony/chords, sustain, velocity/emphasis simulation | Support holding several keys simultaneously. Computer keys are not velocity-sensitive, so *velocity simulation* means a user-set fixed loudness, optionally varied by where an on-screen key is struck or by an accent modifier (see ARCHITECTURE.md decision D6) |
 | Sound shaping | Master volume, attack, decay, sustain level, release, tone/filter, reverb, delay/echo | Keep advanced controls behind an expandable section |
 | Timing | Metronome on/off, BPM, time signature (later) | Avoid intrusive metronome by default |
 | Appearance | Key label mode, demo highlighting, optional light/dark theme | Visual accessibility first |
@@ -128,32 +130,34 @@ A simple **Demo Songs** tab presents beginner-friendly, rights-cleared tunes, in
 
 ## 7. Feature scope / build order
 
-This separates what makes the concept special from nice-to-have extras and avoids a huge first build.
+This separates what makes the concept special from nice-to-have extras and avoids a huge first build. The authoritative phase plan is [ARCHITECTURE.md §19](../ARCHITECTURE.md#19-phased-development-roadmap) and the task checklist is [TODO.md](../TODO.md); this section describes the **product slices** and how they map onto those phases.
 
-### Phase 1 — Playable visual instrument
+### Slice A — Playable visual instrument (roadmap Phases 0–2)
 - Responsive single-page layout; readable keyboard map.
 - Real-time physical-key, pointer, and multi-key lighting.
 - Accurate playable notes, release and focus cleanup.
-- Several distinct instrument presets (piano, synth, bass, chiptune first).
-- Layout, octave, scale, volume, sustain; simple settings persistence.
+- Several distinct instrument presets (piano, synth, bass, chiptune first; drums/percussion).
+- Layout, octave, scale, volume, sustain; settings persistence and reset.
 - Clear audio-unlock guidance (browsers require a user gesture).
-- Keyboard remapping UI and reset if feasible within a focused MVP.
+- Keyboard remapping UI and reset.
 
-### Phase 2 — Learn with live demo tabs
+### Slice B — Learn with live demo tabs (roadmap Phase 3)
 - Rights-cleared built-in melodies with data-driven notes and durations.
 - Song selection, synchronized audible playback, keyboard illumination, tab highlighting.
 - Tempo adjustment, pause/resume, restart, stop, loop.
 - Distinct highlighting for user keys and demo keys, including simultaneous input.
 - Tests verifying that mapped keys, note timing and displayed tabs agree.
 
-### Phase 3 — More complete studio
-- Effects and sound-shaping panel, optional metronome.
-- Performance recording, MIDI export, browser-compatible audio capture.
-- Advanced mappings and saved presets.
-- Accessibility/performance refinement and phone/tablet interactions.
+### Slice C — More complete studio (roadmap Phases 4–5)
+- Effects and sound-shaping panel (reverb, echo), optional metronome.
+- Performance recording, MIDI export, browser-compatible audio export.
+- Saved presets.
+- Accessibility/performance refinement, browser matrix, and phone/tablet interactions.
+
+### Later (roadmap Phase 6, optional)
+- MIDI/song import, practice mode (step-through, count-in, loop a bar), alternate layouts, piano-note view, light theme, preset import/export.
 
 **Important:** This sequence is a *proposal*, not authorization to start implementation. Do not write application code until requested.
-
 ## 8. User journeys
 
 **Play instantly:** Open page -> pick piano -> press A/S/D -> matching screen keys illuminate and notes sound -> switch instruments.
@@ -177,12 +181,11 @@ This separates what makes the concept special from nice-to-have extras and avoid
 - No sensitive user data or credentials are needed.
 - Include a simple, public-repo-friendly README, screenshots/short demo when built, and automated tests for note mapping, song scheduling, and exports.
 
-## 10. Technology direction (tentative, not locked)
+## 10. Technology direction (proposed, not yet implemented)
 
-A lightweight browser app is a good fit. TypeScript plus Web Audio API, optionally Tone.js, could handle sounds and demo scheduling; SVG or HTML/CSS can render interactive keyboard keys. Keep dependencies small. A backend, AI, login, and paid APIs are not justified for the initial concept.
+A lightweight, local-first browser app: TypeScript, Vite, the native Web Audio API, and HTML/CSS/SVG for the interactive keyboard, with Vitest and Playwright for tests and GitHub Actions for CI. A backend, AI, login, and paid APIs are not justified for this product.
 
-Tech choices should be made at implementation time after comparing the simplest viable options; this document intentionally avoids prematurely locking a framework or deployment service.
-
+The rationale, alternatives (including Tone.js, which is *not* currently planned) and boundaries are maintained in [ARCHITECTURE.md](../ARCHITECTURE.md); this product document intentionally does not duplicate them. Technology choices remain proposals until recorded as implemented in ARCHITECTURE.md §20.
 ## 11. Acceptance criteria when we eventually build it
 
 1. Pressing a mapped physical key produces a note and visibly illuminates exactly that key; releasing it turns off the pressed state without delay or stuck audio.
@@ -198,4 +201,4 @@ Tech choices should be made at implementation time after comparing the simplest 
 
 ## Current project state
 
-**Concept and UI specification only.** Repository documentation can be refined now. Code, packages, deployment, CI, and any runnable demo are explicitly out of scope until the owner requests development.
+**Concept and UI specification only.** Planning documents ([architecture](../ARCHITECTURE.md), [TODO](../TODO.md), [agent rules](../AGENTS.md)) exist; no application code, packages, deployment, CI, or runnable demo exist. Those are explicitly out of scope until the owner requests development.
