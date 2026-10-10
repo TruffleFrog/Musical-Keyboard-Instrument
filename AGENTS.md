@@ -2,7 +2,9 @@
 
 Applies to **Claude Code, OpenAI Codex, IDE agents, automated contributors, and anyone following agent-driven workflows**. Read this before every task, and re-check when instructions change.
 
-> **Project phase: planning only (2026-10-10).** Do not start implementing the application, add dependencies, set up deployment, or scaffold files merely because an implementation roadmap exists. Code work requires a clear user request to build it.
+> **Project phase: planning only (2026-10-10).** Do not start implementing the application, add dependencies, set up deployment, or scaffold files merely because an implementation roadmap exists. Code work requires a clear user request to build it. Authorization is tracked as gate `G-01` in `TODO.md`; if it is unchecked, **documentation work only**.
+
+**Read-order for every task:** this file → `TODO.md` → `ARCHITECTURE.md` (especially §20 *Current implementation & infrastructure status*) → `docs/PRODUCT_CONCEPT.md` → `README.md`.
 
 ## 1. Mandatory start-of-task freshness check
 
@@ -37,7 +39,7 @@ If remote checks fail, report the limitation. **Do not pretend freshness was ver
 - **AGENTS.md**: repository contribution and maintenance rules.
 - **docs/PRODUCT_CONCEPT.md**: product behaviors, UX requirements, interactions, accessibility and feature expectations.
 - **ARCHITECTURE.md**: proposed/implemented tech stack, boundaries, component ownership, data contracts, infrastructure and development phases.
-- **TODO.md**: authoritative open/completed task checklist, dependencies, blockers, and milestone acceptance.
+- **TODO.md**: authoritative open/completed task checklist, dependencies, blockers, and phase acceptance criteria.
 - **README.md**: concise public-facing overview; keep it synchronized with actual repository status.
 - **Current code and verified tests**: evidence of what exists; if reality and documentation diverge, fix the discrepancy rather than asserting unsupported completion.
 
@@ -46,8 +48,10 @@ Where two documents conflict, flag the contradiction and make the smallest coher
 ## 3. Work scope and execution discipline
 
 - **Planning request → docs only**. Do not interpret descriptions of features as permission to build them.
-- **Build request → smallest useful vertical slice**, starting from the next uncompleted, unblocked TODO milestone.
+- **Build request → smallest useful vertical slice**, starting from the next uncompleted, unblocked TODO phase task.
 - Prefer simple, understandable implementation over clever abstractions and unnecessary infrastructure.
+- **New dependencies need justification.** The target is zero runtime dependencies. Adding any package requires a stated reason in the PR and an update to `ARCHITECTURE.md` §18; prefer the platform (Web Audio, DOM, `localStorage`) first.
+- **Respect module ownership** (`ARCHITECTURE.md` §4): only `input/` interprets raw DOM key/pointer events, only `audio/` creates Web Audio nodes, `music/` stays pure (no DOM/Web Audio).
 - Keep the app client-only by default. No login, backend, database, analytics, third-party API, app tracking or remote note capture without explicit new requirements.
 - Prefer proposed TypeScript + Vite + native Web Audio API; any meaningful departure needs documented technical reasons and owner approval when it materially changes scope/cost.
 - A keyboard is a **computer QWERTY-style keyboard map**, not merely a decorative piano. Real physical presses, clickable keys, demo events, chords and visual illumination must be synchronized.
@@ -67,15 +71,24 @@ Where two documents conflict, flag the contradiction and make the smallest coher
 7. Do not force-push shared branches, rewrite published history, or merge over stale commits without inspection.
 8. Never automatically deploy to production. Releasing is a separate deliberate action.
 
+### Coordinating with other agents
+
+- **Before starting**, list open work: `git branch -r`, `gh pr list --state open` (or the equivalent API calls). If another branch/PR covers the same `TODO.md` task, build on it or coordinate instead of creating a competing version.
+- **Branch names:** `docs/<topic>` for documentation, `feat/<task-id>-<slug>` for features, `fix/<slug>` for bug fixes. Reference the TODO task ID (e.g. `P1-09`) in the PR title.
+- **One task, one branch, one agent at a time.** Open a draft PR early when work will span a session so others can see it.
+- **Never delete, force-push or rewrite another agent's branch or PR.** Leftover branches are reported, not cleaned up.
+- **Docs conflicts:** when `TODO.md`/`ARCHITECTURE.md` conflict, keep *both* sides' valid changes and re-verify each checkbox; never resolve by taking one side wholesale.
+- **Commit identity and privacy:** before committing, check `git config user.name` / `user.email`. Use the project owner's GitHub identity or GitHub's `…@users.noreply.github.com` address; never commit a personal email address, absolute home-directory path, token or credential.
+
 ## 5. Mandatory task and architecture updates
 
-**This applies whenever an agent finishes work, not just at the end of a milestone.**
+**This applies whenever an agent finishes work, not just at the end of a phase.**
 
-1. Open current `TODO.md` before starting. Identify the matching task(s). If the work is a genuinely new task, add a concise checkbox in the correct milestone **before or alongside the implementation**. Do not duplicate existing tasks.
+1. Open current `TODO.md` before starting. Identify the matching task(s). If the work is a genuinely new task, add a concise checkbox in the correct phase **before or alongside the implementation**. Do not duplicate existing tasks.
 2. After doing work, **mark a checkbox `[x]` only when its acceptance criteria are demonstrably met**. Leave partial work unchecked and add a short status, subtask, or blocker explanation. Do not claim something was tested that was not.
 3. In the **same PR/branch** as the work, update:
    - `TODO.md`: completed checkboxes, blocked or follow-up tasks, and changes to sequencing/dependencies.
-   - `ARCHITECTURE.md`: **Current implementation status**, milestone completion, actual package/runtime choices, key data flows or decisions **when affected**. Do not rewrite architecture for trivial copy/style changes; still verify it remains accurate.
+   - `ARCHITECTURE.md`: **§20 Current implementation & infrastructure status**, phase completion, actual package/runtime choices, key data flows or decisions **when affected**. Do not rewrite architecture for trivial copy/style changes; still verify it remains accurate.
    - `README.md`: project status, setup commands or public features **if they changed**.
    - `docs/PRODUCT_CONCEPT.md`: only when an authorized product requirement changes.
 4. Any significant architecture change: document the decision, alternatives, tradeoffs and migration impacts. A decision can be proposed without silently becoming final.
@@ -89,7 +102,9 @@ A task is done only when the requested behavior or document exists, acceptance c
 
 ## 6. Verification rules by change type
 
-**Docs-only:** check links, terminology, milestone dependencies, file references, markdown formatting, code/status claims and merge result; explicitly say implementation tests were not relevant.
+**Never state that a test, build, lint run or deployment passed unless you ran it (or observed its result) in this session.** "Not run" and "not available yet" are valid, honest answers.
+
+**Docs-only:** check links and anchors, file references, terminology (Phase 0–6 naming), phase/TODO consistency, markdown formatting, code/status claims and merge result; explicitly say implementation tests were not relevant.
 
 **App code:** run available `typecheck`, `lint`, `test`, `build`, and the appropriate browser/E2E tests. If the scripts/tools do not exist yet, document that fact honestly instead of fabricating output. Add regression tests for bug fixes.
 
@@ -110,8 +125,8 @@ At the end of work, give a short handoff with:
 
 Before starting the next task, **repeat the freshness check**. Never rely on a prior assistant's final answer as the sole source of truth.
 
-## 8. Notes on authorized future build order
+## 8. Authorized future build order
 
-As presently planned: **M0 foundation → M1 playable visual keyboard → M2 customization → M3 demo songs with synchronized tabs → M4 recording and effects → M5 quality/release → M6 optional enhancements**.
+As presently planned: **Phase 0 repository foundation → Phase 1 playable visual keyboard and basic audio → Phase 2 customization and settings → Phase 3 demo songs with synchronized tabs → Phase 4 recording, export and effects → Phase 5 testing, accessibility, optimization and release → Phase 6 optional enhancements**.
 
-The accepted specification for each phase is in `ARCHITECTURE.md` and `TODO.md`. Do not expand scope into a full DAW, backend, or subscription business without new user approval.
+The accepted specification for each phase is in `ARCHITECTURE.md` §19 and the task-level checklist is in `TODO.md`. Do not expand scope into a full DAW, backend, or subscription business without new user approval.
