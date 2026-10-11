@@ -1,0 +1,16 @@
+Salamander Grand Piano (Yamaha C5) - samples in this folder
+===========================================================
+Author:   Alexander Holm
+Licence:  Creative Commons Attribution 3.0 Unported (CC BY 3.0)
+          https://creativecommons.org/licenses/by/3.0/
+Source:   https://archive.org/details/SalamanderGrandPianoV3
+          https://github.com/sfzinstruments/SalamanderGrandPiano
+Mirror:   MP3 renders as hosted by the Tone.js project
+          https://github.com/Tonejs/audio/tree/master/salamander
+
+Modifications: none. Only 21 of the original samples (C, D#, F#, A of octaves
+2-6, plus C7) are shipped, in the MP3 form published by Tone.js, and are
+re-pitched by the Web Audio engine to fill the gaps between them.
+
+You may copy, redistribute and adapt these samples, including commercially,
+provided you credit the author as above and indicate if changes were made.

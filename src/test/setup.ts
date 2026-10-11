@@ -1,100 +1,190 @@
 import '@testing-library/jest-dom';
 
-class MockAudioParam {
-  public value = 0;
-  setValueAtTime(val: number) {
-    this.value = val;
-  }
-  linearRampToValueAtTime(val: number) {
-    this.value = val;
-  }
-  exponentialRampToValueAtTime(val: number) {
-    this.value = val;
-  }
-  setTargetAtTime(val: number) {
-    this.value = val;
-  }
-  cancelScheduledValues() {}
+/**
+ * Minimal, behavioural Web Audio mock for jsdom.
+ *  - every create*() returns a node whose AudioParams record their scheduled
+ *    events;
+ *  - scheduled sources fire `onended` shortly after stop() so voice cleanup
+ *    can be tested;
+ *  - currentTime follows performance.now(), so fake timers drive it.
+ */
+
+const PARAM_NAMES = new Set([
+  'gain',
+  'frequency',
+  'detune',
+  'Q',
+  'pan',
+  'delayTime',
+  'threshold',
+  'knee',
+  'ratio',
+  'attack',
+  'release',
+  'playbackRate',
+]);
+
+export interface ParamEvent {
+  type: string;
+  value: number;
+  time: number;
 }
 
-class MockAudioNode {
-  connect() {
+export class MockParam {
+  value = 0;
+  events: ParamEvent[] = [];
+  private rec(type: string, value: number, time: number) {
+    this.events.push({ type, value, time });
     return this;
   }
-  disconnect() {}
-}
-
-class MockOscillatorNode extends MockAudioNode {
-  public type: OscillatorType = 'sine';
-  public frequency = new MockAudioParam();
-  public detune = new MockAudioParam();
-  start() {}
-  stop() {}
-}
-
-class MockGainNode extends MockAudioNode {
-  public gain = new MockAudioParam();
-}
-
-class MockBiquadFilterNode extends MockAudioNode {
-  public type: BiquadFilterType = 'lowpass';
-  public frequency = new MockAudioParam();
-  public Q = new MockAudioParam();
-}
-
-class MockDynamicsCompressorNode extends MockAudioNode {
-  public threshold = new MockAudioParam();
-  public knee = new MockAudioParam();
-  public ratio = new MockAudioParam();
-  public attack = new MockAudioParam();
-  public release = new MockAudioParam();
-}
-
-class MockConvolverNode extends MockAudioNode {
-  public buffer: AudioBuffer | null = null;
-}
-
-class MockAnalyserNode extends MockAudioNode {
-  public fftSize = 1024;
-  public smoothingTimeConstant = 0.8;
-  getByteTimeDomainData(array: Uint8Array) {
-    array.fill(128);
+  setValueAtTime(v: number, t: number) {
+    this.value = v;
+    return this.rec('set', v, t);
+  }
+  linearRampToValueAtTime(v: number, t: number) {
+    return this.rec('linear', v, t);
+  }
+  exponentialRampToValueAtTime(v: number, t: number) {
+    return this.rec('exp', v, t);
+  }
+  setTargetAtTime(v: number, t: number, tau: number) {
+    void tau;
+    return this.rec('target', v, t);
+  }
+  cancelScheduledValues(t: number) {
+    this.events = this.events.filter((e) => e.time < t);
+    return this;
   }
 }
+
+export interface MockNode {
+  kind: string;
+  started?: number;
+  stopped?: number;
+  connected: unknown[];
+  onended: (() => void) | null;
+  [key: string]: unknown;
+}
+
+export const createdNodes: MockNode[] = [];
+
+function makeNode(kind: string, props: Record<string, unknown> = {}): MockNode {
+  const params = new Map<string, MockParam>();
+  const target: MockNode = {
+    kind,
+    connected: [],
+    onended: null,
+    ...props,
+  };
+  const proxy: MockNode = new Proxy(target, {
+    get(t, prop) {
+      if (typeof prop === 'symbol') return undefined;
+      if (prop in t) return t[prop as string];
+      if (PARAM_NAMES.has(prop)) {
+        if (!params.has(prop)) params.set(prop, new MockParam());
+        return params.get(prop);
+      }
+      if (prop === 'connect') {
+        return (dest: unknown) => {
+          t.connected.push(dest);
+          return dest;
+        };
+      }
+      if (prop === 'disconnect') return () => {};
+      if (prop === 'start') {
+        return (when = 0) => {
+          t.started = when;
+        };
+      }
+      if (prop === 'stop') {
+        return (when = 0) => {
+          if (t.stopped === undefined) {
+            setTimeout(() => t.onended?.(), 0);
+          }
+          t.stopped = when;
+        };
+      }
+      if (prop === 'setPeriodicWave') return () => {};
+      return undefined;
+    },
+    set(t, prop, value) {
+      t[prop as string] = value;
+      return true;
+    },
+  });
+  createdNodes.push(proxy);
+  return proxy;
+}
+
+const originStart = typeof performance !== 'undefined' ? performance.now() : 0;
 
 class MockAudioContext {
-  public state: AudioContextState = 'running';
-  public currentTime = 0;
-  public sampleRate = 44100;
-  public destination = new MockAudioNode();
-
+  state: 'running' | 'suspended' = 'running';
+  sampleRate = 44100;
+  baseLatency = 0;
+  destination = makeNode('destination');
+  get currentTime(): number {
+    return (performance.now() - originStart) / 1000;
+  }
+  constructor(_opts?: unknown) {
+    void _opts;
+  }
   createOscillator() {
-    return new MockOscillatorNode();
+    return makeNode('oscillator', { type: 'sine' });
+  }
+  createBufferSource() {
+    return makeNode('bufferSource', { buffer: null });
   }
   createGain() {
-    return new MockGainNode();
+    return makeNode('gain');
   }
   createBiquadFilter() {
-    return new MockBiquadFilterNode();
+    return makeNode('biquad', { type: 'lowpass' });
+  }
+  createStereoPanner() {
+    return makeNode('panner');
+  }
+  createWaveShaper() {
+    return makeNode('shaper', { curve: null, oversample: 'none' });
   }
   createDynamicsCompressor() {
-    return new MockDynamicsCompressorNode();
+    return makeNode('compressor');
   }
   createConvolver() {
-    return new MockConvolverNode();
+    return makeNode('convolver', { buffer: null });
   }
   createAnalyser() {
-    return new MockAnalyserNode();
+    return makeNode('analyser', { fftSize: 1024 });
   }
-  createBuffer(_channels: number, length: number, sampleRate: number) {
+  createDelay() {
+    return makeNode('delay');
+  }
+  createChannelSplitter() {
+    return makeNode('splitter');
+  }
+  createChannelMerger() {
+    return makeNode('merger');
+  }
+  createPeriodicWave() {
+    return {};
+  }
+  createBuffer(channels: number, length: number, sampleRate: number) {
     return {
       length,
       sampleRate,
+      numberOfChannels: channels,
+      duration: length / sampleRate,
       getChannelData: () => new Float32Array(length),
-    } as unknown as AudioBuffer;
+    };
+  }
+  decodeAudioData() {
+    return Promise.reject(new Error('decode not available in tests'));
   }
   resume() {
     this.state = 'running';
+    return Promise.resolve();
+  }
+  close() {
     return Promise.resolve();
   }
 }
@@ -104,15 +194,38 @@ Object.defineProperty(window, 'AudioContext', {
   configurable: true,
   value: MockAudioContext,
 });
+Object.defineProperty(globalThis, 'OfflineAudioContext', {
+  writable: true,
+  configurable: true,
+  value: MockAudioContext,
+});
 
-HTMLCanvasElement.prototype.getContext = (() => {
-  return {
-    clearRect: () => {},
-    beginPath: () => {},
-    moveTo: () => {},
-    lineTo: () => {},
-    stroke: () => {},
-    strokeStyle: '',
-    lineWidth: 1,
-  };
-}) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+// Samples cannot be fetched in unit tests; fail fast and quietly.
+globalThis.fetch = (() =>
+  Promise.reject(new Error('network disabled in tests'))) as typeof fetch;
+
+HTMLCanvasElement.prototype.getContext = (() => ({
+  setTransform() {},
+  clearRect() {},
+  beginPath() {},
+  moveTo() {},
+  lineTo() {},
+  arcTo() {},
+  closePath() {},
+  stroke() {},
+  fill() {},
+  fillRect() {},
+})) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+
+if (typeof window.matchMedia !== 'function') {
+  window.matchMedia = ((q: string) => ({
+    matches: false,
+    media: q,
+    addEventListener() {},
+    removeEventListener() {},
+    addListener() {},
+    removeListener() {},
+    onchange: null,
+    dispatchEvent: () => false,
+  })) as unknown as typeof window.matchMedia;
+}

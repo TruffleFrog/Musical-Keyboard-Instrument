@@ -1,64 +1,62 @@
 export type InstrumentId =
   | 'piano'
-  | 'synth'
   | 'epiano'
+  | 'synth'
   | 'bass'
   | 'chiptune'
   | 'organ';
 
-export interface SynthParams {
-  volume: number;       // 0.0 to 1.0
-  attack: number;       // 0.002 to 0.5 seconds
-  release: number;      // 0.05 to 2.5 seconds
-  filterCutoff: number; // 200 to 12000 Hz
-  detune: number;       // 0 to 30 cents
-  reverbMix: number;    // 0.0 to 0.8
+/**
+ * Normalised 0..1 tone controls shared by every instrument. Each instrument
+ * maps them to physical values (seconds, Hz...) itself.
+ */
+export interface ToneParams {
+  brightness: number;
+  attack: number;
+  release: number;
+  reverb: number;
+  /** Instrument-specific "character" control: stereo width, tremolo, unison... */
+  width: number;
 }
+
+export type ToneParamKey = keyof ToneParams;
 
 export interface InstrumentPreset {
   id: InstrumentId;
   name: string;
-  category: string;
+  /** Short caption under the name, e.g. "Sampled · Yamaha C5". */
+  caption: string;
   tagline: string;
-  accentColor: string;
-  defaultParams: SynthParams;
+  defaults: ToneParams;
+  /** What the "width" knob is called for this instrument. */
+  widthLabel: string;
+  /** Knobs that actually do something for this instrument. */
+  controls: ToneParamKey[];
+  /** [min, max] seconds for the attack knob. */
+  attackRange: [number, number];
+  /** [min, max] seconds for the release knob. */
+  releaseRange: [number, number];
 }
 
 export interface KeyBindingDefinition {
-  semitoneOffset: number; // 0 to 24 (25 keys: C to C+2)
-  code: string;           // e.g. 'KeyA'
-  keyLabel: string;       // e.g. 'A'
+  /** Semitones above the window's lowest C (0..24). */
+  semitoneOffset: number;
+  code: string;
+  keyLabel: string;
   isSharp: boolean;
-  noteBaseName: string;   // e.g. 'C', 'C#'
+  noteBaseName: string;
 }
 
 export interface VirtualKeyNote extends KeyBindingDefinition {
   midi: number;
-  noteName: string;       // e.g. 'C4', 'C#4'
+  noteName: string;
   octave: number;
   frequency: number;
 }
 
-export interface SongNote {
-  note: string;           // e.g. 'E4'
-  midi: number;           // e.g. 64
-  durationBeats: number;  // e.g. 1, 0.5, 2
-  lyricOrHint?: string;
-}
+export type StudioTab = 'play' | 'songs' | 'record';
 
-export interface DemoSong {
-  id: string;
-  title: string;
-  composer: string;
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
-  bpm: number;
-  recommendedInstrument: InstrumentId;
-  recommendedOctave: number;
-  description: string;
-  notes: SongNote[];
-}
-
-export type DemoPlayMode = 'autoplay' | 'practice';
+export type SongMode = 'listen' | 'learn';
 
 export interface RecordedNoteEvent {
   id: string;
@@ -77,16 +75,27 @@ export interface Recording {
   durationMs: number;
   instrument: InstrumentId;
   events: RecordedNoteEvent[];
+  /** Sustain pedal changes, if any were captured. */
+  pedal?: Array<{ timeMs: number; down: boolean }>;
 }
 
-export type StudioTab = 'studio' | 'songs' | 'recorder';
-
 export interface StudioPreferences {
+  version: 2;
   instrument: InstrumentId;
-  baseOctave: number;
-  sustain: boolean;
+  octave: number;
+  masterVolume: number;
+  /** Fixed velocity (0..1) used for computer-keyboard notes. */
+  touch: number;
+  params: Partial<Record<InstrumentId, ToneParams>>;
   showKeyLabels: boolean;
   showNoteNames: boolean;
-  activeTab: StudioTab;
-  customParamsByInstrument: Partial<Record<InstrumentId, SynthParams>>;
+  tab: StudioTab;
+  songId: string;
+  speed: number;
+  songMode: SongMode;
+  loop: boolean;
+  melodyOnly: boolean;
+  learnAccompaniment: boolean;
+  /** When true, picking a song also switches to its recommended sound. */
+  autoSound: boolean;
 }

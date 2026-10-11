@@ -1,95 +1,85 @@
-import { InstrumentId, InstrumentPreset } from '../types/music';
+import type {
+  InstrumentId,
+  InstrumentPreset,
+  ToneParamKey,
+  ToneParams,
+} from '../types/music';
+
+const ALL: ToneParamKey[] = ['brightness', 'attack', 'release', 'reverb', 'width'];
+const NO_ATTACK: ToneParamKey[] = ['brightness', 'release', 'reverb', 'width'];
 
 export const INSTRUMENT_PRESETS: InstrumentPreset[] = [
   {
     id: 'piano',
     name: 'Grand Piano',
-    category: 'Acoustic Keys',
-    tagline: 'Rich harmonic overtones with hammer transient & natural decay',
-    accentColor: '#f59e0b',
-    defaultParams: {
-      volume: 0.8,
-      attack: 0.008,
-      release: 0.65,
-      filterCutoff: 4800,
-      detune: 4,
-      reverbMix: 0.28,
-    },
-  },
-  {
-    id: 'synth',
-    name: 'Warm Polysynth',
-    category: 'Analog Synth',
-    tagline: 'Dual detuned sawtooth oscillators with resonant filter sweep',
-    accentColor: '#38bdf8',
-    defaultParams: {
-      volume: 0.75,
-      attack: 0.045,
-      release: 0.55,
-      filterCutoff: 3200,
-      detune: 14,
-      reverbMix: 0.35,
-    },
+    caption: 'Sampled concert grand',
+    tagline:
+      'Recorded Yamaha C5 (Salamander, CC BY 3.0) with velocity-shaped tone, damper release and stereo spread.',
+    defaults: { brightness: 0.62, attack: 0.1, release: 0.42, reverb: 0.2, width: 0.55 },
+    widthLabel: 'Stereo',
+    controls: NO_ATTACK,
+    attackRange: [0.002, 0.02],
+    releaseRange: [0.12, 1.4],
   },
   {
     id: 'epiano',
-    name: 'Electric Rhodes',
-    category: 'Vintage Keys',
-    tagline: 'Warm fundamental body paired with crystalline bell tine harmonics',
-    accentColor: '#a855f7',
-    defaultParams: {
-      volume: 0.8,
-      attack: 0.01,
-      release: 0.75,
-      filterCutoff: 3600,
-      detune: 6,
-      reverbMix: 0.32,
-    },
+    name: 'Electric Piano',
+    caption: 'Tine model + tremolo',
+    tagline:
+      'Rhodes-style tine and tone-bar model: velocity-dependent bark, pickup saturation, chorus and tremolo.',
+    defaults: { brightness: 0.55, attack: 0.1, release: 0.5, reverb: 0.22, width: 0.45 },
+    widthLabel: 'Tremolo',
+    controls: NO_ATTACK,
+    attackRange: [0.002, 0.04],
+    releaseRange: [0.15, 1.8],
+  },
+  {
+    id: 'synth',
+    name: 'Poly Synth',
+    caption: 'Analog-style pad / lead',
+    tagline:
+      'Unison saws with a 24 dB resonant filter that opens with every key press, plus stereo chorus.',
+    defaults: { brightness: 0.5, attack: 0.28, release: 0.42, reverb: 0.3, width: 0.5 },
+    widthLabel: 'Unison',
+    controls: ALL,
+    attackRange: [0.004, 0.9],
+    releaseRange: [0.08, 2.2],
   },
   {
     id: 'bass',
-    name: 'Funk Synth Bass',
-    category: 'Low-End Mono/Poly',
-    tagline: 'Punchy saw + sub-octave square with snappy resonant filter pluck',
-    accentColor: '#10b981',
-    defaultParams: {
-      volume: 0.85,
-      attack: 0.005,
-      release: 0.22,
-      filterCutoff: 1800,
-      detune: 5,
-      reverbMix: 0.08,
-    },
+    name: 'Funk Bass',
+    caption: 'Saw + sub pluck',
+    tagline:
+      'Mono-style synth bass: sub sine under a saw with a snappy resonant filter envelope. Plays one octave low.',
+    defaults: { brightness: 0.5, attack: 0.05, release: 0.3, reverb: 0.05, width: 0.35 },
+    widthLabel: 'Drive',
+    controls: ALL,
+    attackRange: [0.002, 0.08],
+    releaseRange: [0.05, 0.8],
   },
   {
     id: 'chiptune',
-    name: '8-Bit Chiptune',
-    category: 'Retro Console',
-    tagline: 'Crisp pulse wave + sub-triangle with classic arcade pitch vibrato',
-    accentColor: '#f43f5e',
-    defaultParams: {
-      volume: 0.72,
-      attack: 0.003,
-      release: 0.14,
-      filterCutoff: 7500,
-      detune: 2,
-      reverbMix: 0.1,
-    },
+    name: '8-Bit Chip',
+    caption: 'Pulse + triangle',
+    tagline:
+      'Band-limited 25% pulse with a triangle sub and delayed vibrato, like an old console sound chip.',
+    defaults: { brightness: 0.7, attack: 0.05, release: 0.2, reverb: 0.06, width: 0.4 },
+    widthLabel: 'Vibrato',
+    controls: ALL,
+    attackRange: [0.001, 0.06],
+    releaseRange: [0.01, 0.5],
   },
   {
     id: 'organ',
-    name: 'Cathedral Organ',
-    category: 'Additive Drawbar',
-    tagline: 'Multi-rank drawbar harmonics (8\', 4\', 2⅔\', 2\') with rotary shimmer',
-    accentColor: '#eab308',
-    defaultParams: {
-      volume: 0.75,
-      attack: 0.06,
-      release: 0.4,
-      filterCutoff: 5400,
-      detune: 9,
-      reverbMix: 0.48,
-    },
+    name: 'Pipe Organ',
+    caption: 'Additive pipes',
+    tagline:
+      'Principal, octave and mixture ranks with a breath of key chiff and slow chorus, tuned for a big room.',
+    defaults: { brightness: 0.55, attack: 0.25, release: 0.3, reverb: 0.45, width: 0.5 },
+    widthLabel: 'Rotary',
+    controls: ALL,
+    attackRange: [0.005, 0.5],
+    releaseRange: [0.04, 1.2],
   },
 ];
 
@@ -101,4 +91,27 @@ export const INSTRUMENT_MAP: Record<InstrumentId, InstrumentPreset> =
 
 export function getInstrumentPreset(id: InstrumentId): InstrumentPreset {
   return INSTRUMENT_MAP[id] ?? INSTRUMENT_PRESETS[0];
+}
+
+export function resolveParams(
+  id: InstrumentId,
+  custom?: Partial<ToneParams> | null
+): ToneParams {
+  return { ...getInstrumentPreset(id).defaults, ...(custom ?? {}) };
+}
+
+/** Exponential interpolation, used for time-like controls. */
+export function expRange(min: number, max: number, t: number): number {
+  const c = Math.max(0, Math.min(1, t));
+  return min * Math.pow(max / min, c);
+}
+
+export function attackSeconds(id: InstrumentId, p: ToneParams): number {
+  const [min, max] = getInstrumentPreset(id).attackRange;
+  return expRange(min, max, p.attack);
+}
+
+export function releaseSeconds(id: InstrumentId, p: ToneParams): number {
+  const [min, max] = getInstrumentPreset(id).releaseRange;
+  return expRange(min, max, p.release);
 }
