@@ -6,6 +6,8 @@ import {
   beatOfBar,
   defineSong,
   parseNotation,
+  validateSong,
+  type SongDef,
 } from '../music/song';
 import { SONGS } from '../music/songs';
 import { nameToMidi } from '../music/notes';
@@ -73,6 +75,7 @@ describe('song model helpers', () => {
     recommendedInstrument: 'piano',
     recommendedOctave: 4,
     description: '',
+    provenance: 'Test fixture, original data (MIT).',
     parts: [
       { id: 'a', name: 'A', role: 'melody', hand: 'right', notation: 'C4:1 | D4:3 | E4:3' },
       { id: 'b', name: 'B', role: 'bass', hand: 'left', notation: 'r:1 | C3:3 | G2:3' },
@@ -100,11 +103,61 @@ describe('song model helpers', () => {
   });
 });
 
+describe('song validation', () => {
+  const base: SongDef = {
+    id: 'v',
+    title: 'V',
+    composer: 'x',
+    era: '',
+    difficulty: 'Beginner',
+    bpm: 100,
+    beatsPerBar: 4,
+    beatUnit: 'quarter',
+    key: 'C',
+    recommendedInstrument: 'piano',
+    recommendedOctave: 4,
+    description: '',
+    provenance: 'Original test data, public domain.',
+    parts: [{ id: 'a', name: 'A', role: 'melody', hand: 'right', notation: 'C4:2 D4:2' }],
+  };
+
+  it('accepts a well-formed song', () => {
+    expect(validateSong(defineSong(base))).toEqual([]);
+  });
+
+  it('rejects songs without provenance', () => {
+    expect(() => defineSong({ ...base, provenance: '' })).toThrow(/provenance/);
+  });
+
+  it('rejects notes outside MIDI range', () => {
+    const bad = { ...base, parts: [{ ...base.parts[0], notation: 'A9:1' }] };
+    expect(() => defineSong(bad)).toThrow(/out of range/);
+  });
+
+  it('rejects zero-length notes and an invalid tempo', () => {
+    const zero = { ...base, parts: [{ ...base.parts[0], notation: 'C4:0' }] };
+    expect(() => defineSong(zero)).toThrow(/duration/);
+    expect(() => defineSong({ ...base, bpm: 0 })).toThrow(/bpm/);
+  });
+
+  it('rejects a part that re-strikes a pitch while it still sounds', () => {
+    const bad = {
+      ...base,
+      parts: [{ ...base.parts[0], notation: 'C4:.5/2 C4:.5 D4:1' }],
+    };
+    expect(() => defineSong(bad)).toThrow(/re-strikes/);
+  });
+});
+
 describe('built-in song library', () => {
-  it('has unique ids and plausible metadata', () => {
+  it('has unique ids, provenance and plausible metadata', () => {
     const ids = SONGS.map((s) => s.id);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(SONGS.length).toBeGreaterThanOrEqual(6);
+    expect(SONGS.length).toBeGreaterThanOrEqual(8);
+    for (const s of SONGS) {
+      expect(s.provenance).toMatch(/public domain/i);
+      expect(validateSong(s)).toEqual([]);
+    }
     for (const s of SONGS) {
       expect(s.title.length).toBeGreaterThan(0);
       expect(s.bpm).toBeGreaterThan(30);

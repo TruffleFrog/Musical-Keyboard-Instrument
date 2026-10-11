@@ -51,6 +51,11 @@ export interface SongDef {
   recommendedInstrument: InstrumentId;
   recommendedOctave: number;
   description: string;
+  /**
+   * Where the music comes from and under what terms it may be redistributed.
+   * Required: songs without provenance are rejected.
+   */
+  provenance: string;
   sections?: Array<{ name: string; bar: number }>;
   parts: PartDef[];
 }
@@ -214,6 +219,49 @@ function round(n: number): number {
   return Math.round(n * 10000) / 10000;
 }
 
+/** Returns a list of problems with a compiled song (empty when valid). */
+export function validateSong(song: Song): string[] {
+  const problems: string[] = [];
+  if (!song.id) problems.push('missing id');
+  if (!song.title) problems.push('missing title');
+  if (!song.provenance || song.provenance.trim().length < 10) {
+    problems.push('missing provenance / licence note');
+  }
+  if (!Number.isFinite(song.bpm) || song.bpm <= 0) problems.push('invalid bpm');
+  if (!Number.isFinite(song.beatsPerBar) || song.beatsPerBar <= 0) {
+    problems.push('invalid beatsPerBar');
+  }
+  if (song.notes.length === 0) problems.push('no notes');
+  for (const n of song.notes) {
+    if (!Number.isInteger(n.midi) || n.midi < 0 || n.midi > 127) {
+      problems.push(`pitch out of range: ${n.midi}`);
+    }
+    if (!Number.isFinite(n.start) || n.start < 0) problems.push('negative start');
+    if (!Number.isFinite(n.duration) || n.duration <= 0) {
+      problems.push(`non-positive duration at beat ${n.start}`);
+    }
+    if (!(n.velocity > 0 && n.velocity <= 1)) problems.push('invalid velocity');
+  }
+  // Same pitch struck again while it is still sounding within one part.
+  const byPart = new Map<string, SongNote[]>();
+  for (const n of song.notes) {
+    const list = byPart.get(n.partId) ?? [];
+    list.push(n);
+    byPart.set(n.partId, list);
+  }
+  for (const [part, notes] of byPart) {
+    const lastEnd = new Map<number, number>();
+    for (const n of notes) {
+      const end = lastEnd.get(n.midi);
+      if (end !== undefined && n.start < end - 1e-6) {
+        problems.push(`part "${part}" re-strikes pitch ${n.midi} at beat ${n.start} while it still sounds`);
+      }
+      lastEnd.set(n.midi, n.start + n.duration);
+    }
+  }
+  return problems;
+}
+
 export function defineSong(def: SongDef): Song {
   const parts: SongPart[] = [];
   const notes: SongNote[] = [];
@@ -248,7 +296,7 @@ export function defineSong(def: SongDef): Song {
 
   const { parts: _unused, ...meta } = def;
   void _unused;
-  return {
+  const song: Song = {
     ...meta,
     parts,
     notes,
@@ -256,6 +304,11 @@ export function defineSong(def: SongDef): Song {
     barCount,
     maxDuration,
   };
+  const problems = validateSong(song);
+  if (problems.length > 0) {
+    throw new NotationError(`Invalid song "${def.id}": ${problems.join('; ')}`);
+  }
+  return song;
 }
 
 /** Bar number (1-based; 0 = pickup) containing a beat position. */

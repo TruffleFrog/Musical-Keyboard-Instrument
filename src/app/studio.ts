@@ -324,6 +324,10 @@ export class Studio {
     const onVisibility = () => {
       if (document.hidden) {
         this.releaseKeyboard();
+        // Decision D10: playback pauses when the page is hidden and stays
+        // paused until the user resumes it.
+        if (this.songPlayer.getState() === 'playing') this.songPlayer.pause();
+        if (this.takePlayer.getState() === 'playing') this.takePlayer.stop();
         this.flush();
       }
     };

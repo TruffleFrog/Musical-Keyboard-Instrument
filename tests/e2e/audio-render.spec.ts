@@ -162,6 +162,38 @@ for (const instrument of INSTRUMENTS) {
   });
 }
 
+for (const instrument of ['piano', 'epiano', 'synth', 'bass'] as const) {
+  test(`${instrument}: key velocity measurably changes loudness`, async ({ page }) => {
+    const soft = await render(page, instrument, [{ midi: 60, vel: 0.3, at: 0.1, dur: 1.2 }]);
+    const hard = await render(page, instrument, [{ midi: 60, vel: 1.0, at: 0.1, dur: 1.2 }]);
+    expect(hard.rmsDb - soft.rmsDb, 'rms dB difference').toBeGreaterThan(5);
+  });
+}
+
+test('reverb send audibly lengthens the tail', async ({ page }) => {
+  const tailEnergy = (reverb: number) =>
+    page.evaluate(async (reverb) => {
+      const { AudioEngine } = (window as unknown as {
+        __keyboardStudio: { AudioEngine: new (o: unknown) => any };
+      }).__keyboardStudio;
+      const sr = 44100;
+      const ctx = new OfflineAudioContext(2, sr * 5, sr);
+      const eng = new AudioEngine({ context: ctx });
+      eng.setTone('epiano', { brightness: 0.55, attack: 0.1, release: 0.1, reverb, width: 0.45 });
+      const h = eng.noteOn({ midi: 60, instrument: 'epiano', velocity: 0.8, when: 0.1, source: 'song' });
+      h.release(0.5);
+      const buf = await ctx.startRendering();
+      const L = buf.getChannelData(0);
+      let sum = 0;
+      // energy 1.0 s .. 2.5 s: long after the dry note has ended
+      for (let i = Math.floor(sr * 1.0); i < Math.floor(sr * 2.5); i++) sum += L[i] * L[i];
+      return 10 * Math.log10(Math.max(sum / (1.5 * sr), 1e-20));
+    }, reverb);
+  const dry = await tailEnergy(0);
+  const wet = await tailEnergy(0.8);
+  expect(wet - dry, 'tail energy dB (wet - dry)').toBeGreaterThan(12);
+});
+
 test('instruments are loudness-balanced on the same passage', async ({ page }) => {
   const levels: number[] = [];
   for (const instrument of INSTRUMENTS) {

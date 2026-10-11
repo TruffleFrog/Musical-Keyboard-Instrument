@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   DEFAULT_PREFERENCES,
   LEGACY_PREFERENCES_STORAGE_KEY,
@@ -80,6 +80,36 @@ describe('preferences', () => {
     expect(p.showKeyLabels).toBe(false);
     expect(p.showNoteNames).toBe(true);
     expect(p.version).toBe(2);
+  });
+});
+
+describe('blocked storage (private mode / site data disabled)', () => {
+  it('falls back to defaults and never throws', () => {
+    const spy = vi
+      .spyOn(window, 'localStorage', 'get')
+      .mockImplementation(() => {
+        throw new Error('SecurityError: storage is blocked');
+      });
+    try {
+      expect(loadPreferences()).toEqual(DEFAULT_PREFERENCES);
+      expect(loadRecordings()).toEqual([]);
+      expect(() => savePreferences(DEFAULT_PREFERENCES)).not.toThrow();
+      expect(() => saveRecordings([])).not.toThrow();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('survives setItem failing (quota exceeded)', () => {
+    const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError');
+    });
+    try {
+      expect(() => savePreferences(DEFAULT_PREFERENCES)).not.toThrow();
+      expect(() => saveRecordings([])).not.toThrow();
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
 

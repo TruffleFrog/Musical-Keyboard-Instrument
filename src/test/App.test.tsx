@@ -191,6 +191,46 @@ describe('Keyboard Studio app', () => {
     expect(screen.queryByTestId('recordings-list')).not.toBeInTheDocument();
   });
 
+  it('pauses song playback when the page is hidden and stays paused (D10)', () => {
+    render(<App />);
+    act(() => {
+      studio.selectSong('ode-to-joy');
+      studio.playSong();
+    });
+    expect(studio.getState().songState).toBe('playing');
+
+    const original = Object.getOwnPropertyDescriptor(Document.prototype, 'hidden');
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(studio.getState().songState).toBe('paused');
+
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => false });
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(studio.getState().songState).toBe('paused'); // no auto-resume
+    if (original) Object.defineProperty(Document.prototype, 'hidden', original);
+    delete (document as unknown as Record<string, unknown>).hidden;
+  });
+
+  it('starting a recording stops song playback so demo notes are never captured', () => {
+    render(<App />);
+    act(() => {
+      studio.playSong();
+    });
+    expect(studio.getState().songState).toBe('playing');
+    act(() => {
+      studio.startRecording();
+    });
+    expect(studio.getState().songState).toBe('stopped');
+    expect(studio.getState().recording).toBe(true);
+    act(() => {
+      studio.stopRecording();
+    });
+  });
+
   it('opens and closes the help dialog', () => {
     render(<App />);
     fireEvent.click(screen.getByTestId('help-btn'));

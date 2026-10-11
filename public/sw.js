@@ -9,7 +9,13 @@ self.addEventListener('activate', (event) => {
     caches
       .keys()
       .then((keys) =>
-        Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
+        // The origin may be shared with other GitHub Pages projects: only
+        // ever delete this app's own old caches.
+        Promise.all(
+          keys
+            .filter((k) => k.startsWith('keyboard-studio-') && k !== CACHE)
+            .map((k) => caches.delete(k))
+        )
       )
       .then(() => self.clients.claim())
   );

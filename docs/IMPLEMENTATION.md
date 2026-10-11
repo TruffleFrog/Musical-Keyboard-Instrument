@@ -1,4 +1,6 @@
-# ARCHITECTURE.md — Keyboard Studio
+# Keyboard Studio — architecture as built
+
+> This is the architecture of the code in `src/` as of 2026-10-10. The planned architecture, decisions (D1–D16) and status live in [ARCHITECTURE.md](../ARCHITECTURE.md); progress is tracked in [TODO.md](../TODO.md). Where the two differ, ARCHITECTURE.md §20 lists the deviations.
 
 Client-only TypeScript + React + Vite. Runtime dependencies: `react`, `react-dom`,
 `lucide-react` (icons). Audio is the native Web Audio API; there is no backend.

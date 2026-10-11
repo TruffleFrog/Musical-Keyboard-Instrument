@@ -1,5 +1,7 @@
 # Review of Keyboard Studio v1 and what changed in v2
 
+> Written 2026-10-10 when the app was taken over from its first (AI-generated) version. Branch names below refer to history before this work was merged to `main` in PR #4. Since then: the deployed-page checks, TODO accounting and planning-doc updates are in the PR and `TODO.md`.
+
 This documents an independent audit of the first version (branch
 `feat/keyboard-studio-v1`), the problems found, what was changed on
 `feat/studio-overhaul`, and how each claim was verified. Where something could not be

@@ -63,6 +63,8 @@ const odeToJoy = defineSong({
   recommendedOctave: 3,
   description:
     'The finale theme of the Ninth Symphony. The tune moves almost entirely by step, so it is the friendliest first song. Chords and bass sit underneath.',
+  provenance:
+    'Melody by Ludwig van Beethoven (Symphony No. 9, 1824; public domain). Arrangement original to this project (MIT).',
   sections: [
     { name: 'Theme', bar: 1 },
     { name: 'Answer', bar: 5 },
@@ -126,6 +128,8 @@ const twinkle = defineSong({
   recommendedOctave: 4,
   description:
     'A music-box style arrangement: the melody floats over a rocking broken-chord left hand, the way a pianist would play it.',
+  provenance:
+    'Traditional French melody \"Ah! vous dirai-je, maman\" (1761; public domain). Arrangement original to this project (MIT).',
   sections: [
     { name: 'Twinkle', bar: 1 },
     { name: 'Up above', bar: 5 },
@@ -164,6 +168,66 @@ const twinkle = defineSong({
 });
 
 /* ------------------------------------------------------------------ */
+/* Mary Had a Little Lamb                                              */
+/* ------------------------------------------------------------------ */
+
+const MARY_PROG = `
+  C:4 | C:4 | G:4 | C:4 |
+  C:4 | C:4 | G:4 | C:4 |`;
+
+const maryHadALittleLamb = defineSong({
+  id: 'mary-had-a-little-lamb',
+  title: 'Mary Had a Little Lamb',
+  composer: 'Traditional (words by Sarah Josepha Hale, 1830)',
+  era: '1830',
+  difficulty: 'Beginner',
+  bpm: 108,
+  beatsPerBar: 4,
+  beatUnit: 'quarter',
+  key: 'C major',
+  recommendedInstrument: 'piano',
+  recommendedOctave: 4,
+  description:
+    'Three notes, a handful of repeats and a plain C–G accompaniment: the easiest tune in the library and a good first Learn-mode song.',
+  provenance:
+    'Traditional nursery rhyme, words by Sarah Josepha Hale (1830; public domain). Arrangement original to this project (MIT).',
+  sections: [
+    { name: 'Mary', bar: 1 },
+    { name: 'Fleece', bar: 5 },
+  ],
+  parts: [
+    {
+      id: 'melody',
+      name: 'Melody',
+      role: 'melody',
+      hand: 'right',
+      velocity: 0.8,
+      notation: `
+        E4{Ma-} D4{ry} C4{had} D4{a} | E4{lit-} E4{tle} E4:2{lamb} |
+        D4{lit-} D4{tle} D4:2{lamb} | E4{lit-} G4{tle} G4:2{lamb} |
+        E4{Ma-} D4{ry} C4{had} D4{a} | E4{lit-} E4{tle} E4{lamb} E4{its} |
+        D4{fleece} D4{was} E4{white} D4{as} | C4:4{snow} |`,
+    },
+    {
+      id: 'chords',
+      name: 'Chords',
+      role: 'harmony',
+      hand: 'left',
+      velocity: 0.5,
+      notation: comp(MARY_PROG, 4, (s) => `${ODE_VOICE[s]}:2 ${ODE_VOICE[s]}:2`),
+    },
+    {
+      id: 'bass',
+      name: 'Bass',
+      role: 'bass',
+      hand: 'left',
+      velocity: 0.62,
+      notation: comp(MARY_PROG, 4, (s) => `${ODE_BASS[s]}:4`),
+    },
+  ],
+});
+
+/* ------------------------------------------------------------------ */
 /* Für Elise (main theme, A section)                                   */
 /* ------------------------------------------------------------------ */
 
@@ -192,6 +256,8 @@ const furElise = defineSong({
   recommendedOctave: 4,
   description:
     'Bagatelle No. 25 in A minor. The famous rocking E–D♯ motif in the right hand, answered by rolling A-minor and E-major arpeggios in the left. Played with both endings, twice through.',
+  provenance:
+    'Ludwig van Beethoven, Bagatelle in A minor WoO 59 (c. 1810; public domain). Arrangement original to this project (MIT).',
   sections: [
     { name: 'Theme', bar: 1 },
     { name: 'Return', bar: 9 },
@@ -271,6 +337,8 @@ const greensleeves = defineSong({
   recommendedOctave: 4,
   description:
     'A Renaissance ballad in waltz time. Two verses and the soaring chorus, with a bass-and-chord "oom-pah-pah" accompaniment.',
+  provenance:
+    'Traditional English ballad (16th century; public domain). Arrangement original to this project (MIT).',
   sections: [
     { name: 'Verse 1', bar: 1 },
     { name: 'Verse 2', bar: 9 },
@@ -343,6 +411,8 @@ const korobeiniki = defineSong({
   recommendedOctave: 4,
   description:
     'The folk dance most people know from falling blocks. Bouncy oom-pah accompaniment under the tune; try it on the 8-Bit sound.',
+  provenance:
+    'Russian folk song, text by Nikolay Nekrasov (1861; public domain). Original arrangement, not the 1989 sound-chip arrangement (MIT).',
   sections: [
     { name: 'A', bar: 1 },
     { name: 'B', bar: 5 },
@@ -412,6 +482,8 @@ const canon = defineSong({
   recommendedOctave: 4,
   description:
     'The eight-note ground bass loops five times while the line above speeds up from half notes to quarters to flowing eighths — the same trick the original plays with three violins.',
+  provenance:
+    'Johann Pachelbel, Canon in D (c. 1680; public domain). Variations arranged for this project (MIT).',
   sections: [
     { name: 'Ground', bar: 1 },
     { name: 'Theme', bar: 5 },
@@ -463,14 +535,18 @@ const canon = defineSong({
 
 /**
  * One bar of the prelude: the five-note figure n1..n5 is played as
- * n1 n2 n3 n4 n5 n3 n4 n5, twice. Notes are held to the end of each half bar
- * (as with half-bar pedalling) so the harmony blooms the way it does on piano.
+ * n1 n2 n3 n4 n5 n3 n4 n5, twice. Each note rings (as with half-bar pedalling)
+ * until the half bar ends, or until the same pitch is struck again, so no
+ * pitch ever overlaps itself.
  */
 function preludeBar(n: [string, string, string, string, string]): string {
   const order = [n[0], n[1], n[2], n[3], n[4], n[2], n[3], n[4]];
-  const half = order.map(
-    (note, i) => `${note}:.25/${(2 - i * 0.25 - 0.06).toFixed(2)}`
-  );
+  const half = order.map((note, i) => {
+    const next = order.findIndex((m, j) => j > i && m === note);
+    const until = (next === -1 ? order.length : next) * 0.25;
+    const hold = until - i * 0.25 - 0.06;
+    return `${note}:.25/${hold.toFixed(2)}`;
+  });
   return `${half.join(' ')} ${half.join(' ')}`;
 }
 
@@ -500,6 +576,8 @@ const prelude = defineSong({
   recommendedOctave: 4,
   description:
     'The opening bars of the Well-Tempered Clavier. One simple broken-chord shape, re-harmonised bar by bar; notes ring together like a lightly pedalled piano.',
+  provenance:
+    'Johann Sebastian Bach, Well-Tempered Clavier I, Prelude in C major BWV 846 (1722; public domain). Figuration generated from the harmonic outline; original to this project (MIT).',
   sections: [{ name: 'Prelude', bar: 1 }],
   parts: [
     {
@@ -526,6 +604,7 @@ const prelude = defineSong({
 export const SONGS: Song[] = [
   odeToJoy,
   twinkle,
+  maryHadALittleLamb,
   greensleeves,
   korobeiniki,
   furElise,

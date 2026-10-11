@@ -51,6 +51,17 @@ test.describe('playing', () => {
     await expect(page.getByTestId('piano-key-F4')).toHaveAttribute('data-active', 'false');
   });
 
+  test('panic releases a key held with the pointer', async ({ page }) => {
+    const c4 = await page.getByTestId('piano-key-C4').boundingBox();
+    await page.mouse.move(c4!.x + c4!.width / 2, c4!.y + c4!.height - 20);
+    await page.mouse.down();
+    await expect(page.getByTestId('piano-key-C4')).toHaveAttribute('data-active', 'true');
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('piano-key-C4')).toHaveAttribute('data-active', 'false');
+    await expect(page.getByTestId('active-notes-readout')).toContainText('Ready');
+    await page.mouse.up();
+  });
+
   test('octave shift moves the marked QWERTY range', async ({ page }) => {
     await expect(page.getByTestId('octave-display')).toHaveText('C4–C6');
     await page.keyboard.press('KeyX');
@@ -215,10 +226,13 @@ test.describe('recording', () => {
     await page.getByTestId('record-start-btn').click();
     await expect(page.getByTestId('recording-status-badge')).toHaveText('Recording');
 
-    await page.keyboard.press('KeyA');
+    // Hold a chord long enough that replay keeps keys lit for >1 s, so the
+    // assertion below does not race the animation frame.
+    await page.keyboard.down('KeyA');
     await page.keyboard.down('KeyD');
     await page.keyboard.down('KeyG');
-    await page.waitForTimeout(150);
+    await page.waitForTimeout(1500);
+    await page.keyboard.up('KeyA');
     await page.keyboard.up('KeyD');
     await page.keyboard.up('KeyG');
     await page.getByTestId('record-stop-btn').click();

@@ -2,7 +2,7 @@
 
 Applies to **Claude Code, OpenAI Codex, IDE agents, automated contributors, and anyone following agent-driven workflows**. Read this before every task, and re-check when instructions change.
 
-> **Project phase: planning only (2026-10-10).** Do not start implementing the application, add dependencies, set up deployment, or scaffold files merely because an implementation roadmap exists. Code work requires a clear user request to build it. Authorization is tracked as gate `G-01` in `TODO.md`; if it is unchecked, **documentation work only**.
+> **Project phase: implementation under way (authorized 2026-10-10, gate `G-01` ✓).** A playable app exists; see `ARCHITECTURE.md` §20 and `TODO.md` for exactly what. Build the next unblocked task as the smallest useful vertical slice. Releases are separate and **manual only** (`G-03` approved 2026-10-10 for manual GitHub Pages deploys).
 
 **Read-order for every task:** this file → `TODO.md` → `ARCHITECTURE.md` (especially §20 *Current implementation & infrastructure status*) → `docs/PRODUCT_CONCEPT.md` → `README.md`.
 
@@ -50,7 +50,7 @@ Where two documents conflict, flag the contradiction and make the smallest coher
 - **Planning request → docs only**. Do not interpret descriptions of features as permission to build them.
 - **Build request → smallest useful vertical slice**, starting from the next uncompleted, unblocked TODO phase task.
 - Prefer simple, understandable implementation over clever abstractions and unnecessary infrastructure.
-- **New dependencies need justification.** The target is zero runtime dependencies. Adding any package requires a stated reason in the PR and an update to `ARCHITECTURE.md` §18; prefer the platform (Web Audio, DOM, `localStorage`) first.
+- **New dependencies need justification.** The target is zero runtime dependencies (currently `react`, `react-dom`, `lucide-react` — decision D12). Adding any package requires a stated reason in the PR and an update to `ARCHITECTURE.md` §18; prefer the platform (Web Audio, DOM, `localStorage`) first.
 - **Respect module ownership** (`ARCHITECTURE.md` §4): only `input/` interprets raw DOM key/pointer events, only `audio/` creates Web Audio nodes, `music/` stays pure (no DOM/Web Audio).
 - Keep the app client-only by default. No login, backend, database, analytics, third-party API, app tracking or remote note capture without explicit new requirements.
 - Prefer proposed TypeScript + Vite + native Web Audio API; any meaningful departure needs documented technical reasons and owner approval when it materially changes scope/cost.
@@ -112,6 +112,32 @@ A task is done only when the requested behavior or document exists, acceptance c
 
 **Deployment:** only when explicitly authorized; confirm actual deployed URL, checks and manual usability, not just the workflow's green icon.
 
+## 6a. Commands and codebase-specific rules
+
+| Command | Purpose |
+| --- | --- |
+| `npm ci` | Reproducible install |
+| `npm run dev` | Vite dev server (http://localhost:5173) |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm test` | Vitest unit / integration |
+| `npm run test:e2e` | Playwright (Chromium): starts the dev server and a production preview itself |
+| `npm run build` | Production build to `dist/` |
+| `npm run probe:audio` / `probe:spectrum` | Offline-render level and spectral reports per instrument |
+| `node scripts/smoke-url.mjs <url>` | Smoke-test a deployed or previewed build |
+
+(`npm run lint` does not exist yet — `P0-05`.)
+
+Rules specific to this codebase:
+
+1. **Latency first.** User notes call `engine.noteOn` synchronously from the input handler. Never put network, storage or React rendering on that path.
+2. **Click-free envelopes.** Build amplitude envelopes from `setTargetAtTime` so releasing mid-attack cannot jump; do not use `cancelAndHoldAtTime` (not in Firefox). Voices end through `onended`, not timers.
+3. **Stable layout.** Anything whose content changes at runtime (readouts, timers, chord names, indicators) lives in a fixed-size box with clipped overflow, or is absolutely positioned. Add a case to `tests/e2e/layout-stability.spec.ts` when adding dynamic UI.
+4. **Songs** are authored as parts in `src/music/songs.ts`; every part's bars must sum to the bar length, notes stay within C2–C7, `provenance` is required, and a part must not re-strike a pitch that is still sounding (the validator and tests enforce these).
+5. **Assets and licences.** Only redistributable audio with a verified licence, recorded in `public/samples/**/ATTRIBUTION.txt` and the README. CC BY needs visible attribution.
+6. **Loudness.** If you add or change a voice, run `npm run probe:audio` and adjust `INSTRUMENT_TRIM` so instruments stay balanced and unclipped.
+7. **No test hooks in production.** `window.__keyboardStudio` exists in dev builds only.
+8. **Shared Pages origin.** The deployed app lives on a user-wide `github.io` origin. Keep storage keys and cache names namespaced (`keyboard_studio_*`, `keyboard-studio-*`) and never delete caches you do not own.
+
 ## 7. Multi-agent handoff
 
 At the end of work, give a short handoff with:
@@ -125,8 +151,8 @@ At the end of work, give a short handoff with:
 
 Before starting the next task, **repeat the freshness check**. Never rely on a prior assistant's final answer as the sole source of truth.
 
-## 8. Authorized future build order
+## 8. Build order and status
 
-As presently planned: **Phase 0 repository foundation → Phase 1 playable visual keyboard and basic audio → Phase 2 customization and settings → Phase 3 demo songs with synchronized tabs → Phase 4 recording, export and effects → Phase 5 testing, accessibility, optimization and release → Phase 6 optional enhancements**.
+Status (2026-10-10): the first implementation covers parts of Phases 0–4 and some of Phase 6 — `TODO.md` has the exact per-task state. As planned: **Phase 0 repository foundation → Phase 1 playable visual keyboard and basic audio → Phase 2 customization and settings → Phase 3 demo songs with synchronized tabs → Phase 4 recording, export and effects → Phase 5 testing, accessibility, optimization and release → Phase 6 optional enhancements**.
 
 The accepted specification for each phase is in `ARCHITECTURE.md` §19 and the task-level checklist is in `TODO.md`. Do not expand scope into a full DAW, backend, or subscription business without new user approval.

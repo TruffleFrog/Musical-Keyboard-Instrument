@@ -12,11 +12,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 );
 
 // Test hook: lets automated tests drive the real engine (including offline
-// rendering). Only exposed in dev builds or when ?e2e is in the URL.
-if (
-  import.meta.env.DEV ||
-  new URLSearchParams(window.location.search).has('e2e')
-) {
+// rendering). Exposed in dev builds only; never shipped in production.
+if (import.meta.env.DEV) {
   (window as unknown as Record<string, unknown>).__keyboardStudio = {
     studio,
     AudioEngine,

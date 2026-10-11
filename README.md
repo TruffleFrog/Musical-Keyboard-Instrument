@@ -1,78 +1,122 @@
 # Keyboard Studio 🎹
 
-**Status: concept / planning — not built yet. There is nothing to install, run or visit.**
+Turn your computer keyboard into a piano. A recorded concert grand, a Rhodes-style electric
+piano, a polysynth, a funk bass, an 8-bit chip and a pipe organ; eight fully arranged songs
+with a falling-note view; a Learn mode that waits for you; recording with MIDI export.
+Everything runs in the browser, works offline, and needs no backend or account.
 
-Keyboard Studio is a playful browser-based musical instrument controlled by an ordinary **computer keyboard**. Choose instrument sounds, customize key mappings and effects, see an on-screen computer keyboard illuminate in real time, and learn songs with demo tabs whose notes *play and light up the matching keys*.
+[▶️ **Play Live in Browser**](https://trufflefrog.github.io/Musical-Keyboard-Instrument/)
 
-## The idea
+![Keyboard Studio, Play tab](docs/screenshots/after/02-play-chord.png)
 
-- **Interactive visual computer keyboard** — recognizable QWERTY layout; pressed keys glow in real time, including held chords and clicked/tapped keys. User-played and demo-played keys look different.
-- **Demo songs with synchronized tabs** — choose a familiar melody, play/pause/stop/restart it, adjust the tempo, loop it, watch the key tabs highlight, and see the keyboard map light up exactly as each note sounds. You can play along.
-- **Customization** — instruments (piano, synth, bass, drums, chiptune), layouts and key remapping, octaves, scales, chords/polyphony, sustain, velocity-style emphasis, volume and sound shaping, reverb and echo, and an optional metronome. Preferences are saved locally and can be reset.
-- **Record and share** — in-browser performance recording with MIDI export and browser-compatible audio export.
-- **Lightweight and local** — designed to work without an account, backend, AI, or paid API.
+| Songs (Listen) | Songs (Learn) |
+| --- | --- |
+| ![Songs](docs/screenshots/after/04-songs-playing.png) | ![Learn](docs/screenshots/after/05-songs-learn.png) |
 
-The main UI will place **a large, animated computer-keyboard map at the center**, expandable customization controls to the side, and a demo-song / song-tab player directly beneath it. The intent is an easy first-run experience, not a wall of settings.
+> **Status:** playable app, implemented in phases 0–4 *in part* — see [TODO.md](TODO.md) for the
+> task-by-task truth and [ARCHITECTURE.md §20](ARCHITECTURE.md#20-current-implementation--infrastructure-status)
+> for what exists. Not yet built: key remapping, scales/transpose, drums, echo, metronome,
+> audio export, ESLint/Prettier. The on-screen keyboard is a **piano keybed with computer-key
+> legends**, not the QWERTY-shaped key map the original concept describes (see decision D13).
+
+## Playing
+
+| Keys | Action |
+| --- | --- |
+| `A S D F G H J K L ; ' \ , . /` | White keys, two octaves plus the top C |
+| `W E T Y U O P [ ] =` | Black keys |
+| `Z` / `X`, `↓` / `↑` | Octave down / up (the marked band slides along the 61-key keyboard) |
+| `Space` (hold) | Sustain pedal; the **Sustain** button latches it |
+| `1` – `6` | Choose a sound |
+| `Esc` | Panic: silence everything |
+| `?` | Help and shortcuts |
+
+Mouse and touch work too: click lower on a key for a harder strike, drag across keys for a
+glissando, use several fingers for chords. Many keyboards cannot report arbitrarily many
+simultaneous keys (rollover/ghosting); clicking the on-screen keys has no such limit.
+
+## Features
+
+- **Sounds** – *Grand Piano* is a real recording (Salamander Grand Piano, Yamaha C5) with
+  velocity-shaped tone, damper release and stereo spread. *Electric Piano* (tine FM model with
+  pickup saturation, tremolo and chorus), *Poly Synth*, *Funk Bass*, *8-Bit Chip* and *Pipe
+  Organ* are synthesised live. Five rotary controls per sound.
+- **Songs** – every song is a multi-part arrangement (melody, chords, bass or two hands), so
+  several keys sound and light at once. Mute any part, listen to the melody only, change tempo
+  while it plays, loop, click the timeline to jump, or export the arrangement as a multi-track
+  MIDI file.
+- **Learn mode** – the melody waits for you. The target key is outlined and its computer-key
+  letter shown; the right note name in any octave counts, so beginners never need an impossible
+  chord. The accompaniment plays along as you advance.
+- **Note roll** – song notes fall onto the keys that will sound; notes you play rise away from
+  the keys.
+- **Recorder** – takes keep your touch and sustain pedal, replay with lit keys, can be renamed
+  and export as `.mid` (one track per sound, CC64 pedal events included).
+- **Local first** – preferences and takes live in `localStorage`; a service worker caches the
+  app and samples after the first visit so it works offline. No telemetry, no uploads.
+
+## Songs
+
+| Song | Parts | Level |
+| --- | --- | --- |
+| Ode to Joy (Beethoven) | melody · chords · bass | Beginner |
+| Twinkle, Twinkle, Little Star | melody · left hand (Alberti bass with ringing root) | Beginner |
+| Mary Had a Little Lamb | melody · chords · bass | Beginner |
+| Greensleeves | melody · waltz chords · bass | Intermediate |
+| Korobeiniki (folk) | melody · oom-pah chords · walking bass | Intermediate |
+| Für Elise (Beethoven) | right hand · left hand (rolling arpeggios) | Intermediate |
+| Canon in D (Pachelbel) | melody · harmony · ground bass, five variations | Intermediate |
+| Prelude in C (J. S. Bach) | arpeggio · bass | Advanced |
+
+All compositions are public domain; the arrangements are original to this project. Provenance
+is recorded per song in `src/music/songs.ts` and validated by the tests.
+
+## Development
+
+```bash
+npm ci               # or npm install
+npm run dev          # http://localhost:5173
+npm run typecheck
+npm test             # Vitest: 140+ unit/integration tests
+npm run test:e2e     # Playwright (Chromium): layout stability, songs, learn, recording, audio render, offline
+npm run build        # production build in dist/
+npm run preview      # serve dist/ locally
+npm run probe:audio  # offline-render loudness / clipping / tail report per instrument
+npm run screenshots  # regenerate docs/screenshots/after
+```
+
+`npm run test:e2e` starts the dev server and a production preview (for the offline test)
+automatically. Requires Node 22.12+ (`.nvmrc` pins 24). Playwright uses a Chromium found under
+`%LOCALAPPDATA%\ms-playwright` when present. `scripts/smoke-url.mjs <url>` smoke-tests any
+deployed build.
+
+### Publishing the live version
+
+Deployment is **manual only** (decision D9): nothing is published on push or merge. In GitHub:
+**Actions → "Deploy to GitHub Pages (manual)" → Run workflow** (choose `main`). The workflow
+re-runs typecheck and unit tests, builds with `VITE_BASE=/Musical-Keyboard-Instrument/`, and
+publishes `dist/` to
+<https://trufflefrog.github.io/Musical-Keyboard-Instrument/>.
 
 ## Documentation
 
 | Document | Purpose |
 | --- | --- |
-| [docs/PRODUCT_CONCEPT.md](docs/PRODUCT_CONCEPT.md) | Product and UI concept: layout, features, demo-song behavior, interaction rules, acceptance criteria |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Proposed technical architecture, infrastructure and deployment plan, phased roadmap, and the **current implementation/infrastructure status** |
-| [TODO.md](TODO.md) | Task-level progress tracker with phases, dependencies and acceptance criteria |
-| [AGENTS.md](AGENTS.md) | Mandatory instructions for AI coding agents (Claude Code, Codex, etc.) and automated contributors |
+| [TODO.md](TODO.md) | Task tracker, gates and phase acceptance criteria — the source of truth for progress |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Planned architecture, decisions (D1–D16) and **current status (§20)** |
+| [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) | The architecture as actually built: engine, scheduler, layout rules, tests |
+| [docs/PRODUCT_CONCEPT.md](docs/PRODUCT_CONCEPT.md) | Product and UI concept, with implementation notes |
+| [docs/REVIEW.md](docs/REVIEW.md) | Audit of the first version, what changed, measured evidence, what needs human listening |
+| [AGENTS.md](AGENTS.md) | Rules for AI coding agents and contributors |
 
-## Current status
+## Credits and licensing
 
-| Area | State |
-| --- | --- |
-| Idea, feature scope and product concept | Documented |
-| Architecture, infrastructure plan and roadmap | Documented (proposal) |
-| Task tracker and agent rules | Documented |
-| Central live keyboard UI | Specified, **not implemented** |
-| Audio engine | **Not started** |
-| Demo-song tabs and synchronized lighting | Specified, **not implemented** |
-| Customization panel, recording, export | Specified, **not implemented** |
-| Tooling, tests, CI | **Not set up** |
-| Hosting / public release | **Not set up — no deployed site exists** |
-
-No application code or infrastructure has been created yet. Implementation will start only when the repository owner explicitly authorizes it (gate `G-01` in [TODO.md](TODO.md)).
-
-## Proposed technology stack
-
-*Proposed — none of this is installed yet. See [ARCHITECTURE.md](ARCHITECTURE.md) for rationale and tradeoffs.*
-
-- **TypeScript** (strict) built with **Vite**
-- **Native Web Audio API** for synthesis (no required sample packs or paid services)
-- **HTML / CSS / SVG** for the interactive keyboard
-- **Local browser storage** (`localStorage`) for settings and presets
-- **Vitest** and **Playwright** for tests; **GitHub Actions** for pull-request checks
-- **Static hosting** (GitHub Pages is the first choice), deployed **manually** — never automatically on push or merge
-- No backend, database, accounts, analytics or AI
-
-## Proposed build order
-
-| Phase | Outcome |
-| --- | --- |
-| 0 | Repository foundation and development environment |
-| 1 | Interactive visual keyboard and basic audio engine |
-| 2 | Instrument customization and settings |
-| 3 | Demo songs, animated tabs and synchronized playback |
-| 4 | Recording, MIDI/audio export and advanced effects |
-| 5 | Testing, accessibility, optimization and release |
-| 6 | Optional future enhancements |
-
-**Recommended first vertical slice (once authorized):** physical keyboard input → one synthesized voice → matching on-screen key lights. Then customization, then the synchronized demo-song player. Details and tasks: [TODO.md](TODO.md).
-
-## Contributing
-
-Development has not begun, so there is no build to run yet.
-
-- **Ideas and documentation fixes** are welcome as pull requests against the planning documents.
-- **Code contributions** should wait until implementation is authorized; check [TODO.md](TODO.md) for the current gate and the next unblocked task.
-- Everyone — people and AI agents — should read [AGENTS.md](AGENTS.md) first: fetch the latest `main`, consult `TODO.md`, work on a feature branch, keep documentation updated in the same PR, and never claim checks passed unless they were run.
-
-## License
-
-The source code in this repository is licensed under the [MIT License](LICENSE). Any third-party songs or sound assets added later will carry their own recorded provenance and licenses.
+- **Source code:** [MIT](LICENSE).
+- **Grand piano samples:** *Salamander Grand Piano* by Alexander Holm, licensed
+  [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). Source:
+  <https://archive.org/details/SalamanderGrandPianoV3>. See
+  [`public/samples/piano/ATTRIBUTION.txt`](public/samples/piano/ATTRIBUTION.txt); attribution
+  is also in the in-app help.
+- **All other sounds** are synthesised at runtime; no other audio assets are used.
+- **Songs** are public-domain compositions; arrangements are original (MIT).
+- Icons: [lucide](https://lucide.dev) (ISC).
