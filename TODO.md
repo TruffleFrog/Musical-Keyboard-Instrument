@@ -337,12 +337,12 @@ These are documentation deliverables only. Completing them does **not** advance 
 - [ ] `P5-10` Optional hardening: Content-Security-Policy compatible with chosen hosting.
 - [ ] `P5-11` README: screenshots or short demo capture, accurate usage and limitations (e.g. keyboard rollover).
 - [ ] `P5-12` Release checklist and lightweight changelog/tag convention.
-- [ ] `P5-13` Create a **manual-only** (`workflow_dispatch`) GitHub Pages deploy workflow; set Vite `base`; least-privilege permissions.  
+- [x] `P5-13` Create a **manual-only** (`workflow_dispatch`) GitHub Pages deploy workflow; set Vite `base`; least-privilege permissions.  
   *Needs:* `G-03`. *Done when:* no deployment happens on push or merge; a manual run publishes `dist/` only.
-  *Status 2026-10-10:* Workflow added in PR #4 (`.github/workflows/deploy-pages.yml`, `workflow_dispatch` only). Ticked after the first manual run is verified (follow-up PR).
+  *Done 2026-10-10:* `.github/workflows/deploy-pages.yml` is `workflow_dispatch`-only. Merging PR #4 to `main` published nothing; the first run was triggered by hand (run 38110158269) and published `dist/` only.
 - [ ] `P5-14` Owner-approved first deploy; verify the live URL loads, plays sound and runs the key flows.  
   *Needs:* `P5-13`. *Done when:* verified on the actual deployed URL, not just a green workflow.
-  *Status 2026-10-10:* Pending the first manual deploy and verification on the live URL.
+  *Status 2026-10-10:* first manual deploy done and verified on <https://trufflefrog.github.io/Musical-Keyboard-Instrument/> by `scripts/smoke-url.mjs` (HTTP 200; piano samples fetched and decoded from the deployed files; key press lights C4; song playback lights several keys; service worker controls the page; no failed requests or console errors; reloads while offline). **Still open:** an audible check by a person on the live URL, which headless tests cannot provide.
 - [ ] `P5-15` Update [ARCHITECTURE.md §20](ARCHITECTURE.md#20-current-implementation--infrastructure-status) to reflect real infrastructure.
 
 ---
@@ -370,6 +370,7 @@ Not scheduled. Each item needs explicit prioritization, a justification, and an 
 
 ## Changelog of this tracker
 
+- 2026-10-10 — Pages enabled (Actions source) and first manual deploy verified (`P5-13` done; `P5-14` awaits an audible check).
 - 2026-10-10 — First application merged (PR #4). `G-01` and `G-03` granted by the owner. Statuses updated task by task: ticked only where the acceptance criterion was demonstrated; partial work stays open with a note. New decisions D12–D16 recorded in [ARCHITECTURE.md §21](ARCHITECTURE.md#21-decisions-and-open-questions). D13 (piano keybed instead of the QWERTY key map) awaits owner confirmation.
 - 2026-10-10 — Initial TODO created from the architecture roadmap; planning documents marked done, **all implementation tasks open**.
 - 2026-10-10 — Open decisions D1–D11 resolved (see [ARCHITECTURE.md §21](ARCHITECTURE.md#21-decisions-and-open-questions)); `G-02` and `P0-02` done (MIT `LICENSE`); `P0-12` added. `G-01` and `G-03` remain owner-only.
