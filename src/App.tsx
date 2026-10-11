@@ -56,11 +56,12 @@ export const App: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingElapsedMs, setRecordingElapsedMs] = useState(0);
   const [liveRecordedEventsCount, setLiveRecordedEventsCount] = useState(0);
+  const [emptyTakeNotice, setEmptyTakeNotice] = useState(false);
   const [playingRecordingId, setPlayingRecordingId] = useState<string | null>(
     null
   );
 
-  // Refs for low-latency event tracking
+  // Refs for low-latency event tracking & non-interrupting live synth params
   const codeToMidiRef = useRef<Map<string, number>>(new Map());
   const recordingStartMsRef = useRef<number>(0);
   const openRecordedNotesRef = useRef<
@@ -82,6 +83,12 @@ export const App: React.FC = () => {
     };
   }, [currentPreset, prefs.customParamsByInstrument, prefs.instrument]);
 
+  const instrumentRef = useRef<InstrumentId>(prefs.instrument);
+  instrumentRef.current = prefs.instrument;
+
+  const synthParamsRef = useRef<SynthParams>(currentSynthParams);
+  synthParamsRef.current = currentSynthParams;
+
   const keyboardNotes = useMemo(
     () => getKeyboardNotes(prefs.baseOctave),
     [prefs.baseOctave]
@@ -97,6 +104,11 @@ export const App: React.FC = () => {
     audioEngine.setSustain(prefs.sustain);
   }, [prefs.sustain]);
 
+  // Update active voices in real time when sliders change
+  useEffect(() => {
+    audioEngine.updateActiveParams(currentSynthParams);
+  }, [currentSynthParams]);
+
   // Persist recordings to localStorage
   useEffect(() => {
     saveRecordings(recordings);
@@ -109,6 +121,24 @@ export const App: React.FC = () => {
     }
     playbackTimersRef.current = [];
   }, []);
+
+  // Ensure demo song notes are within the visible 25-key octave window
+  const ensureSongInVisibleOctave = useCallback(
+    (song: DemoSong) => {
+      const baseMidi = (prefs.baseOctave + 1) * 12;
+      const maxMidi = baseMidi + 24;
+      const outOfBounds = song.notes.some(
+        (n) => n.midi < baseMidi || n.midi > maxMidi
+      );
+      if (outOfBounds) {
+        setPrefs((prev) => ({
+          ...prev,
+          baseOctave: song.recommendedOctave,
+        }));
+      }
+    },
+    [prefs.baseOctave]
+  );
 
   // Panic / All Notes Off
   const handlePanic = useCallback(() => {
@@ -124,7 +154,12 @@ export const App: React.FC = () => {
   // Start a user-triggered note
   const startUserNote = useCallback(
     (midi: number) => {
-      audioEngine.noteOn(midi, prefs.instrument, currentSynthParams, 0.85);
+      audioEngine.noteOn(
+        midi,
+        instrumentRef.current,
+        synthParamsRef.current,
+        0.85
+      );
       setActiveMidis((prev) => {
         if (prev.has(midi)) return prev;
         const next = new Set(prev);
@@ -134,13 +169,14 @@ export const App: React.FC = () => {
 
       // Capture in Recorder if recording is active
       if (isRecording) {
+        setEmptyTakeNotice(false);
         const nowOffset = Math.max(
           0,
           performance.now() - recordingStartMsRef.current
         );
         openRecordedNotesRef.current.set(midi, {
           startTimeMs: nowOffset,
-          instrument: prefs.instrument,
+          instrument: instrumentRef.current,
         });
         setLiveRecordedEventsCount(
           capturedEventsRef.current.length + openRecordedNotesRef.current.size
@@ -165,12 +201,10 @@ export const App: React.FC = () => {
     },
     [
       currentStepIndex,
-      currentSynthParams,
       demoPlayMode,
       isRecording,
       practiceCompleted,
       prefs.activeTab,
-      prefs.instrument,
       selectedSong.notes,
     ]
   );
@@ -195,7 +229,7 @@ export const App: React.FC = () => {
             performance.now() - recordingStartMsRef.current
           );
           capturedEventsRef.current.push({
-            id: `${midi}-${ Math.round(openNote.startTimeMs) }`,
+            id: `${midi}-${Math.round(openNote.startTimeMs)}`,
             midi,
             noteName: getNoteName(midi),
             startTimeMs: Math.round(openNote.startTimeMs),
@@ -214,20 +248,28 @@ export const App: React.FC = () => {
 
   // Physical QWERTY Keyboard Listeners + Stuck-Note Prevention
   useEffect(() => {
-    const isInteractiveInput = (target: EventTarget | null): boolean => {
+    const isTextEntryInput = (target: EventTarget | null): boolean => {
       if (!(target instanceof HTMLElement)) return false;
       const tag = target.tagName.toLowerCase();
-      return (
-        tag === 'input' ||
-        tag === 'textarea' ||
-        tag === 'select' ||
-        target.isContentEditable
-      );
+      if (tag === 'textarea' || target.isContentEditable) return true;
+      if (tag === 'input') {
+        const inputType = (
+          (target as HTMLInputElement).type || 'text'
+        ).toLowerCase();
+        return (
+          inputType === 'text' ||
+          inputType === 'search' ||
+          inputType === 'email' ||
+          inputType === 'password' ||
+          inputType === 'number'
+        );
+      }
+      return false;
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-      if (isInteractiveInput(e.target)) return;
+      if (isTextEntryInput(e.target)) return;
 
       if (e.code === 'Escape') {
         e.preventDefault();
@@ -299,7 +341,6 @@ export const App: React.FC = () => {
     };
 
     const handleWindowBlur = () => {
-      // Prevent stuck notes when user switches windows or tabs
       for (const midi of codeToMidiRef.current.values()) {
         audioEngine.noteOff(midi);
       }
@@ -327,7 +368,7 @@ export const App: React.FC = () => {
     };
   }, [endUserNote, handlePanic, prefs.baseOctave, startUserNote]);
 
-  // Demo Song Auto-Play Scheduler
+  // Demo Song Auto-Play Scheduler (uses refs for synth params & instrument to avoid retrigger stutter)
   useEffect(() => {
     if (!isDemoPlaying || demoPlayMode !== 'autoplay') {
       return;
@@ -342,10 +383,14 @@ export const App: React.FC = () => {
 
     const beatMs = (60 / (selectedSong.bpm * playbackSpeed)) * 1000;
     const stepDurationMs = Math.max(90, beatMs * note.durationBeats);
-    const gateDurationMs = Math.max(60, stepDurationMs * 0.85);
+    const gateDurationMs = Math.max(55, stepDurationMs * 0.84);
 
-    // Trigger note audio and highlight corresponding virtual piano key
-    audioEngine.noteOn(note.midi, prefs.instrument, currentSynthParams, 0.8);
+    audioEngine.noteOn(
+      note.midi,
+      instrumentRef.current,
+      synthParamsRef.current,
+      0.8
+    );
     setDemoHighlightMidis(new Set([note.midi]));
 
     const gateOffTimer = setTimeout(() => {
@@ -370,11 +415,9 @@ export const App: React.FC = () => {
     };
   }, [
     currentStepIndex,
-    currentSynthParams,
     demoPlayMode,
     isDemoPlaying,
     playbackSpeed,
-    prefs.instrument,
     selectedSong,
   ]);
 
@@ -438,6 +481,7 @@ export const App: React.FC = () => {
     setSelectedSong(song);
     setCurrentStepIndex(0);
     setPracticeCompleted(false);
+    ensureSongInVisibleOctave(song);
   };
 
   const handleChangeDemoMode = (mode: DemoPlayMode) => {
@@ -446,6 +490,7 @@ export const App: React.FC = () => {
     setDemoPlayMode(mode);
     setCurrentStepIndex(0);
     setPracticeCompleted(false);
+    ensureSongInVisibleOctave(selectedSong);
   };
 
   const handleToggleDemoPlay = () => {
@@ -453,10 +498,15 @@ export const App: React.FC = () => {
       setIsDemoPlaying(false);
       setDemoHighlightMidis(new Set());
     } else {
+      if (isRecording) {
+        setIsRecording(false);
+        openRecordedNotesRef.current.clear();
+      }
       if (playingRecordingId) {
         clearPlaybackTimers();
         setPlayingRecordingId(null);
       }
+      ensureSongInVisibleOctave(selectedSong);
       setDemoPlayMode('autoplay');
       setIsDemoPlaying(true);
     }
@@ -475,6 +525,7 @@ export const App: React.FC = () => {
     setPlayingRecordingId(null);
     setIsDemoPlaying(false);
     setDemoHighlightMidis(new Set());
+    setEmptyTakeNotice(false);
     openRecordedNotesRef.current.clear();
     capturedEventsRef.current = [];
     recordingStartMsRef.current = performance.now();
@@ -489,7 +540,6 @@ export const App: React.FC = () => {
       performance.now() - recordingStartMsRef.current
     );
 
-    // Close any still-held notes
     for (const [midi, openNote] of openRecordedNotesRef.current.entries()) {
       capturedEventsRef.current.push({
         id: `${midi}-${Math.round(openNote.startTimeMs)}`,
@@ -510,6 +560,7 @@ export const App: React.FC = () => {
     setIsRecording(false);
 
     if (sortedEvents.length > 0) {
+      setEmptyTakeNotice(false);
       const presetName = getInstrumentPreset(prefs.instrument).name;
       const newRecording: Recording = {
         id: `rec-${Date.now()}`,
@@ -520,6 +571,8 @@ export const App: React.FC = () => {
         events: sortedEvents,
       };
       setRecordings((prev) => [newRecording, ...prev]);
+    } else {
+      setEmptyTakeNotice(true);
     }
   };
 
@@ -530,13 +583,11 @@ export const App: React.FC = () => {
     setPlayingRecordingId(recording.id);
 
     for (const ev of recording.events) {
+      const inst = ev.instrument || recording.instrument;
+      const customParams = prefs.customParamsByInstrument[inst];
+
       const onTimer = setTimeout(() => {
-        audioEngine.noteOn(
-          ev.midi,
-          ev.instrument || recording.instrument,
-          undefined,
-          ev.velocity
-        );
+        audioEngine.noteOn(ev.midi, inst, customParams, ev.velocity);
         setDemoHighlightMidis((prev) => {
           const next = new Set(prev);
           next.add(ev.midi);
@@ -581,6 +632,11 @@ export const App: React.FC = () => {
       handleStopRecordingPlayback();
     }
     setRecordings((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  const handleClearAllRecordings = () => {
+    handleStopRecordingPlayback();
+    setRecordings([]);
   };
 
   const handleRenameRecording = (id: string, newName: string) => {
@@ -681,6 +737,7 @@ export const App: React.FC = () => {
             isRecording={isRecording}
             recordingElapsedMs={recordingElapsedMs}
             liveRecordedEventsCount={liveRecordedEventsCount}
+            emptyTakeNotice={emptyTakeNotice}
             recordings={recordings}
             playingRecordingId={playingRecordingId}
             onStartRecording={handleStartRecording}
@@ -688,6 +745,7 @@ export const App: React.FC = () => {
             onPlayRecording={handlePlayRecording}
             onStopPlayback={handleStopRecordingPlayback}
             onDeleteRecording={handleDeleteRecording}
+            onClearAllRecordings={handleClearAllRecordings}
             onRenameRecording={handleRenameRecording}
           />
         )}
@@ -696,14 +754,21 @@ export const App: React.FC = () => {
       {/* Prominent Main Stage Virtual Piano Keyboard */}
       <PianoKeyboard
         notes={keyboardNotes}
+        baseOctave={prefs.baseOctave}
+        sustain={prefs.sustain}
         activeMidis={activeMidis}
         demoHighlightMidis={demoHighlightMidis}
         practiceTargetMidi={practiceTargetMidi}
+        practiceStepNumber={currentStepIndex + 1}
         showKeyLabels={prefs.showKeyLabels}
         showNoteNames={prefs.showNoteNames}
         accentColor={currentPreset.accentColor}
         onNoteStart={startUserNote}
         onNoteEnd={endUserNote}
+        onChangeOctave={handleChangeOctave}
+        onToggleSustain={() =>
+          setPrefs((prev) => ({ ...prev, sustain: !prev.sustain }))
+        }
       />
 
       {/* Compact Keyboard Shortcut Footer */}

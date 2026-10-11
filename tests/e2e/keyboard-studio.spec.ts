@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('Keyboard Studio E2E', () => {
-  test('plays notes and chords via QWERTY keyboard and highlights virtual piano keys', async ({
+  test('plays notes and chords via QWERTY keyboard, mouse pointer, and prevents stuck notes on Panic', async ({
     page,
   }) => {
     await page.goto('/');
@@ -22,16 +22,18 @@ test.describe('Keyboard Studio E2E', () => {
     await expect(e4Key).toHaveAttribute('data-active', 'true');
     await expect(g4Key).toHaveAttribute('data-active', 'true');
 
-    await page.keyboard.up('KeyA');
-    await page.keyboard.up('KeyD');
-    await page.keyboard.up('KeyG');
-
+    // Trigger Escape (Panic / All Notes Off) while keys are down
+    await page.keyboard.press('Escape');
     await expect(c4Key).toHaveAttribute('data-active', 'false');
     await expect(e4Key).toHaveAttribute('data-active', 'false');
     await expect(g4Key).toHaveAttribute('data-active', 'false');
+
+    await page.keyboard.up('KeyA');
+    await page.keyboard.up('KeyD');
+    await page.keyboard.up('KeyG');
   });
 
-  test('switches instruments, adjusts sound parameters, and persists preferences', async ({
+  test('switches instruments, adjusts sound parameters without losing QWERTY playability, and persists preferences', async ({
     page,
   }) => {
     await page.goto('/');
@@ -42,6 +44,16 @@ test.describe('Keyboard Studio E2E', () => {
     await expect(page.getByTestId('led-status-display')).toContainText(
       'WARM POLYSYNTH'
     );
+
+    // Focus a synth range slider and verify QWERTY playing still works immediately
+    const cutoffSlider = page.getByTestId('param-cutoff');
+    await cutoffSlider.focus();
+    await page.keyboard.down('KeyA');
+    await expect(page.getByTestId('piano-key-C4')).toHaveAttribute(
+      'data-active',
+      'true'
+    );
+    await page.keyboard.up('KeyA');
 
     // Toggle Sustain via Spacebar
     await page.keyboard.press('Space');
@@ -79,7 +91,7 @@ test.describe('Keyboard Studio E2E', () => {
     const e4Key = page.getByTestId('piano-key-E4');
     await expect(e4Key).toHaveAttribute('data-active', 'true');
 
-    // Pause and switch to Practice Mode
+    // Switch to Practice Mode
     await page.getByTestId('mode-practice-btn').click();
     await expect(page.getByTestId('practice-target-note')).toHaveText('E4');
     await expect(e4Key).toHaveAttribute('data-demo-target', 'true');

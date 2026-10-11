@@ -157,7 +157,10 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
             aria-label="Select Instrument"
             data-testid="header-instrument-select"
             value={instrument}
-            onChange={(e) => onSelectInstrument(e.target.value as InstrumentId)}
+            onChange={(e) => {
+              onSelectInstrument(e.target.value as InstrumentId);
+              e.currentTarget.blur();
+            }}
           >
             {INSTRUMENT_PRESETS.map((preset) => (
               <option key={preset.id} value={preset.id}>

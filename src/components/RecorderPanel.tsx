@@ -10,6 +10,7 @@ import {
   Clock,
   Edit3,
   Check,
+  AlertCircle,
 } from 'lucide-react';
 import { INSTRUMENT_MAP } from '../data/instruments';
 import { downloadRecordingAsMidi } from '../utils/midiExport';
@@ -19,6 +20,7 @@ interface RecorderPanelProps {
   isRecording: boolean;
   recordingElapsedMs: number;
   liveRecordedEventsCount: number;
+  emptyTakeNotice: boolean;
   recordings: Recording[];
   playingRecordingId: string | null;
   onStartRecording: () => void;
@@ -26,6 +28,7 @@ interface RecorderPanelProps {
   onPlayRecording: (recording: Recording) => void;
   onStopPlayback: () => void;
   onDeleteRecording: (id: string) => void;
+  onClearAllRecordings: () => void;
   onRenameRecording: (id: string, newName: string) => void;
 }
 
@@ -40,6 +43,7 @@ export const RecorderPanel: React.FC<RecorderPanelProps> = ({
   isRecording,
   recordingElapsedMs,
   liveRecordedEventsCount,
+  emptyTakeNotice,
   recordings,
   playingRecordingId,
   onStartRecording,
@@ -47,6 +51,7 @@ export const RecorderPanel: React.FC<RecorderPanelProps> = ({
   onPlayRecording,
   onStopPlayback,
   onDeleteRecording,
+  onClearAllRecordings,
   onRenameRecording,
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -105,13 +110,18 @@ export const RecorderPanel: React.FC<RecorderPanelProps> = ({
           <div className="rec-meta-row" data-testid="recording-event-count">
             {isRecording ? (
               <span>
-                Captured <strong>{liveRecordedEventsCount}</strong> note events — play
-                keys on your keyboard or virtual piano!
+                Captured <strong>{liveRecordedEventsCount}</strong> note events —
+                play keys on your keyboard or virtual piano!
+              </span>
+            ) : emptyTakeNotice ? (
+              <span className="rec-empty-notice" data-testid="empty-take-notice">
+                <AlertCircle size={13} /> No notes were played during that take —
+                press keys while recording to save.
               </span>
             ) : (
               <span>
-                Hit Record and play melodies or chords. Export any take as a Standard
-                MIDI (<code>.mid</code>) file.
+                Hit Record and play melodies or chords. Export any take as a
+                Standard MIDI (<code>.mid</code>) file.
               </span>
             )}
           </div>
@@ -175,7 +185,20 @@ export const RecorderPanel: React.FC<RecorderPanelProps> = ({
             <Music size={16} />
             <h2>Session Takes ({recordings.length})</h2>
           </div>
-          <span className="section-hint">Saved locally in browser storage</span>
+          {recordings.length > 1 ? (
+            <button
+              type="button"
+              data-testid="clear-all-recordings-btn"
+              className="ghost-action-btn"
+              onClick={onClearAllRecordings}
+              title="Delete all saved session recordings"
+            >
+              <Trash2 size={12} />
+              <span>Clear All</span>
+            </button>
+          ) : (
+            <span className="section-hint">Saved locally in browser storage</span>
+          )}
         </div>
 
         {recordings.length === 0 ? (
@@ -217,6 +240,7 @@ export const RecorderPanel: React.FC<RecorderPanelProps> = ({
                           onChange={(e) => setEditingName(e.target.value)}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') commitEditing(rec.id);
+                            if (e.key === 'Escape') setEditingId(null);
                           }}
                           autoFocus
                         />
