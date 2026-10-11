@@ -183,6 +183,15 @@ function lowpass(ctx: BaseAudioContext, freq: number, q = 0.707): BiquadFilterNo
   return f;
 }
 
+/** AC coupling: removes the DC an asymmetric saturator creates. */
+function highpass(ctx: BaseAudioContext, freq: number, q = 0.707): BiquadFilterNode {
+  const f = ctx.createBiquadFilter();
+  f.type = 'highpass';
+  f.frequency.value = freq;
+  f.Q.value = q;
+  return f;
+}
+
 function panner(ctx: BaseAudioContext, pan: number, dest: AudioNode): StereoPannerNode {
   const p = ctx.createStereoPanner();
   p.pan.value = clamp(pan, -1, 1);
@@ -288,10 +297,12 @@ const rhodes: VoiceFactory = (env, s) => {
   const shaper = rig.node(ctx.createWaveShaper());
   shaper.curve = env.assets.rhodesCurve as Float32Array<ArrayBuffer>;
   shaper.oversample = '2x';
+  const dcBlock = rig.node(highpass(ctx, 32));
   const tone = rig.node(lowpass(ctx, 1800 * Math.pow(9, s.tone.brightness) + 600 * v, 0.6));
   carrier.connect(pre);
   pre.connect(shaper);
-  shaper.connect(tone);
+  shaper.connect(dcBlock);
+  dcBlock.connect(tone);
   tone.connect(rig.env);
 
   // Bell partial (tine overtone) with a very short life.

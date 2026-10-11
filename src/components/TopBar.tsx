@@ -132,7 +132,14 @@ export const TopBar: React.FC = () => {
           >
             {t.icon}
             <span>{t.label}</span>
-            {t.id === 'record' && recording && <span className="rec-dot" aria-label="recording" />}
+            {t.id === 'record' && (
+              <span
+                className={`rec-dot ${recording ? 'is-on' : ''}`}
+                role={recording ? 'img' : undefined}
+                aria-label={recording ? 'recording' : undefined}
+                aria-hidden={recording ? undefined : true}
+              />
+            )}
           </button>
         ))}
       </nav>

@@ -1,51 +1,111 @@
 # Keyboard Studio 🎹
 
-**Keyboard Studio** is a modern, low-latency web application that turns your computer keyboard into an expressive musical instrument and mini music production studio. Built with TypeScript, Vite, React, and the Web Audio API.
+Turn your computer keyboard into a piano. A recorded concert grand, a Rhodes-style
+electric piano, a polysynth, a funk bass, an 8-bit chip and a pipe organ; seven
+fully arranged songs with a falling-note view; a Learn mode that waits for you;
+recording with MIDI export. Everything runs in the browser, offline, with no
+backend or account.
+
+![Keyboard Studio, Play tab](docs/screenshots/after/02-play-chord.png)
+
+| Songs (Listen) | Songs (Learn) |
+| --- | --- |
+| ![Songs](docs/screenshots/after/04-songs-playing.png) | ![Learn](docs/screenshots/after/05-songs-learn.png) |
+
+## Playing
+
+| Keys | Action |
+| --- | --- |
+| `A S D F G H J K L ; ' \ , . /` | White keys, two octaves plus the top C |
+| `W E T Y U O P [ ] =` | Black keys |
+| `Z` / `X`, `↓` / `↑` | Octave down / up (the marked band slides along the 61-key keyboard) |
+| `Space` (hold) | Sustain pedal; the **Sustain** button latches it |
+| `1` – `6` | Choose a sound |
+| `Esc` | Panic: silence everything |
+| `?` | Help and shortcuts |
+
+Mouse and touch work too: click lower on a key for a harder strike, drag across
+keys for a glissando, use several fingers for chords.
 
 ## Features
 
-### 1. Playable Musical Keyboard
-- **Full 2-Octave Chromatic Layout (25 Keys)**: Play melodies and chords directly from your QWERTY keyboard (`A S D F G H J K L ; ' \ , . /` for white keys, `W E T Y U O P [ ] =` for sharps/flats).
-- **Real-Time Visual Highlighting**: Virtual piano keys light up instantaneously on physical key presses, mouse clicks/drags, touch input, demo playback, and recording playback.
-- **Octave Shift & Sustain**: Shift across octaves (`C1`–`C7`) using `Z` / `X` (or on-screen buttons) and toggle/hold sustain using `Space`.
-- **Stuck-Note Protection**: Automatic voice cleanup on window blur, tab switch, octave shifts, and a dedicated **Panic (All Notes Off)** control.
+- **Sounds** – *Grand Piano* is a real recording (Salamander Grand Piano, Yamaha C5) with
+  velocity-shaped tone, damper release and stereo spread. *Electric Piano* (tine FM model with
+  pickup saturation, tremolo and chorus), *Poly Synth* (unison saws, 24 dB resonant filter that
+  opens on every key), *Funk Bass*, *8-Bit Chip* (band-limited pulse + triangle, delayed
+  vibrato) and *Pipe Organ* (additive ranks with key chiff) are synthesised live. Five rotary
+  controls per sound (tone, attack, release, reverb and a sound-specific character control).
+- **Songs** – Ode to Joy, Twinkle Twinkle, Greensleeves, Korobeiniki, Für Elise, Canon in D and
+  Bach's Prelude in C. Each is a real multi-part arrangement (melody, chords, bass or two
+  hands) so several keys sound and light up at once. Mute any part, listen to the melody only,
+  change tempo while it plays, loop, jump by clicking the timeline, or export the arrangement
+  as a multi-track MIDI file.
+- **Learn mode** – the melody waits for you. The target key is outlined and its computer-key
+  letter is shown; the right note name in any octave counts, so beginners never need an
+  impossible chord. The accompaniment plays along as you advance.
+- **Note roll** – song notes fall onto the keys that will sound; the notes you play rise away
+  from the keys.
+- **Recorder** – takes keep your touch and sustain pedal, replay with lit keys, can be renamed,
+  and export as `.mid` (one track per sound, CC64 pedal events included).
+- **Local first** – preferences and takes live in `localStorage`; a service worker caches the
+  app and piano samples after the first visit so it works offline.
 
-### 2. Multi-Instrument Web Audio Synthesizer
-- **6 Distinct Synthesized Instruments**:
-  - **Grand Piano**: Warm acoustic-style harmonic partials with hammer transient and natural decay.
-  - **Warm Polysynth**: Dual detuned sawtooth oscillators with resonant filter sweep.
-  - **Electric Rhodes**: Bell-like tine harmonics over a warm fundamental body.
-  - **Funk Synth Bass**: Punchy sawtooth + sub-octave square wave with resonant filter pluck.
-  - **8-Bit Chiptune**: Classic retro pulse wave + triangle sub-oscillator with vibrato.
-  - **Cathedral Organ**: Drawbar-style additive harmonic synthesis (`1x`, `1.5x`, `2x`, `4x`).
-- **Live Sound Customization**: Adjust Master Volume, Attack, Release, Filter Brightness (Cutoff), Stereo Detune, and Studio Ambience (Reverb) with real-time waveform visualization.
+## Songs
 
-### 3. Demo Songs & Interactive Learning
-- **6 Built-in Public-Domain Melodies**: *Ode to Joy*, *Twinkle Twinkle Little Star*, *Für Elise*, *Korobeiniki (Tetris Theme)*, *Greensleeves*, and *Canon in D*.
-- **Synchronized Virtual Key Highlighting**: Watch the virtual piano keys light up in exact synchronization with the song playback.
-- **Practice Mode (Follow Notes)**: Step through any song at your own pace—the next target key highlights on the piano and waits for you to press the matching key before advancing.
-- **Speed Control & Interactive Note Roll**: Adjust playback speed from `0.5x` to `2.0x` and view both note names (`E4`) and physical QWERTY bindings (`D`) in the scrolling tab roll.
+| Song | Parts | Level |
+| --- | --- | --- |
+| Ode to Joy (Beethoven) | melody · chords · bass | Beginner |
+| Twinkle, Twinkle, Little Star | melody · left hand (Alberti bass with ringing root) | Beginner |
+| Greensleeves | melody · waltz chords · bass | Intermediate |
+| Korobeiniki (folk) | melody · oom-pah chords · walking bass | Intermediate |
+| Für Elise (Beethoven) | right hand · left hand (rolling arpeggios) | Intermediate |
+| Canon in D (Pachelbel) | melody · harmony · ground bass, five variations | Intermediate |
+| Prelude in C (J. S. Bach) | arpeggio · bass | Advanced |
 
-### 4. Performance Recording & MIDI Export
-- **Accurate Event Recording**: Record live performances with millisecond timing accuracy and play them back on any instrument.
-- **Session Library**: Save recordings locally in `localStorage`, replay, rename, or delete them.
-- **Standard MIDI (`.mid`) Export**: Download any recorded performance as a standard `.mid` file ready to import into any DAW.
-
-## Getting Started
+## Development
 
 ```bash
-# Install dependencies
 npm install
-
-# Start development server
-npm run dev
-
-# Run unit tests
-npm test
-
-# Run E2E browser tests
-npm run test:e2e
-
-# Build for production
-npm run build
+npm run dev          # http://localhost:5173
+npm run typecheck
+npm test             # Vitest: 130+ unit/integration tests
+npm run test:e2e     # Playwright: layout stability, songs, learn, recording, audio render, offline
+npm run build        # production build in dist/
+npm run probe:audio  # offline-render loudness / clipping / tail report per instrument
+npm run screenshots  # regenerate docs/screenshots/after
 ```
+
+`npm run test:e2e` starts the dev server and a production preview (for the offline test)
+automatically. Playwright uses a Chromium found under `%LOCALAPPDATA%\ms-playwright` when
+present.
+
+### Layout
+
+```
+src/
+  music/      pure music: notes, chord naming, song model + notation parser, arrangements
+  audio/      Web Audio engine: voices, buses/effects, sample bank, shared assets
+  playback/   audio-clock sequence player, Learn session, take conversion
+  app/        studio controller (input, transport, recording, persistence)
+  state/      tiny external store
+  components/ React UI
+  data/       key map + geometry, instrument presets
+  utils/      MIDI export, storage
+public/samples/piano/   Salamander samples + ATTRIBUTION.txt
+docs/       REVIEW.md (audit + results), screenshots
+```
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the design and [docs/REVIEW.md](docs/REVIEW.md) for the
+audit of the first version, what changed and how it was verified.
+
+## Credits and licensing
+
+- **Grand piano samples:** *Salamander Grand Piano* by Alexander Holm, licensed
+  [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). Source:
+  <https://archive.org/details/SalamanderGrandPianoV3>. See
+  [`public/samples/piano/ATTRIBUTION.txt`](public/samples/piano/ATTRIBUTION.txt). Attribution is
+  also shown in the in-app help.
+- **All other sounds** are synthesised at runtime; no other audio assets are used.
+- **Songs** are public-domain compositions; the arrangements in `src/music/songs.ts` are
+  original to this project.
+- Icons: [lucide](https://lucide.dev) (ISC).

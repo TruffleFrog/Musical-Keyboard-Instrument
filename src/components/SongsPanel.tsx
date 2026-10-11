@@ -144,6 +144,8 @@ const LearnPrompt: React.FC<{ song: Song }> = ({ song }) => {
   return (
     <div
       className="learn-prompt"
+      role="status"
+      aria-live="polite"
       data-testid="practice-prompt-banner"
       data-result={learn.lastResult ?? undefined}
       key={learn.tick}

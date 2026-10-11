@@ -28,6 +28,23 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register(`${import.meta.env.BASE_URL}sw.js`)
+      .then(() => navigator.serviceWorker.ready)
+      .then((reg) => {
+        // Hand the worker the list of everything this page already loaded
+        // (including the piano samples, once they have finished) so it can
+        // cache it for offline use.
+        const send = () => {
+          const urls = [
+            window.location.href,
+            ...performance
+              .getEntriesByType('resource')
+              .map((e) => e.name),
+          ];
+          reg.active?.postMessage({ type: 'precache', urls });
+        };
+        send();
+        window.setTimeout(send, 4000); // samples usually land within seconds
+      })
       .catch(() => {
         /* offline caching is optional */
       });

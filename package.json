@@ -1,8 +1,8 @@
 {
   "name": "keyboard-studio",
   "private": true,
-  "version": "1.0.0",
-  "description": "A modern Web Audio musical keyboard studio with multi-instrument synthesis, demo song practice, and MIDI recording.",
+  "version": "2.0.0",
+  "description": "A computer-keyboard piano with sampled grand piano, synthesised instruments, multi-part songs, learn mode, recording and MIDI export. Runs entirely in the browser.",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,7 +11,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "probe:audio": "node scripts/audio-probe.mjs",
+    "probe:spectrum": "node scripts/audio-spectrum.mjs",
+    "screenshots": "node scripts/screenshots.mjs docs/screenshots/after"
   },
   "dependencies": {
     "lucide-react": "^0.469.0",

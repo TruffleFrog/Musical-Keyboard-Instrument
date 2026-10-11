@@ -19,11 +19,18 @@ interface KeyboardProps {
   high: number;
 }
 
+const NO_TARGETS: ReadonlySet<number> = new Set();
+
 export const KeyboardDock: React.FC<KeyboardProps> = ({ low, high }) => {
   const octave = useStudio((s) => s.prefs.octave);
   const user = useStudio((s) => s.userNotes);
   const song = useStudio((s) => s.songNotes);
-  const targets = useStudio((s) => s.learnTargets);
+  const learnTargets = useStudio((s) => s.learnTargets);
+  const learning = useStudio(
+    (s) => s.prefs.tab === 'songs' && s.prefs.songMode === 'learn'
+  );
+  // Target outlines belong to the Songs > Learn view only.
+  const targets = learning ? learnTargets : NO_TARGETS;
   const showLetters = useStudio((s) => s.prefs.showKeyLabels);
   const showNames = useStudio((s) => s.prefs.showNoteNames);
   const pedal = useStudio((s) => s.pedalLatched || s.pedalHeld);

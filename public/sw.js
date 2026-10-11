@@ -15,13 +15,37 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// The page reports everything it loaded so a first visit becomes fully
+// available offline without waiting for a second load.
+self.addEventListener('message', (event) => {
+  const data = event.data;
+  if (!data || data.type !== 'precache' || !Array.isArray(data.urls)) return;
+  event.waitUntil(
+    caches.open(CACHE).then((cache) =>
+      Promise.all(
+        data.urls
+          .filter((u) => {
+            try {
+              return new URL(u, self.location.href).origin === self.location.origin;
+            } catch {
+              return false;
+            }
+          })
+          .map((u) =>
+            cache.match(u, { ignoreVary: true }).then((hit) => (hit ? null : cache.add(u).catch(() => {})))
+          )
+      )
+    )
+  );
+});
+
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
   if (new URL(req.url).origin !== self.location.origin) return;
   event.respondWith(
     caches.open(CACHE).then(async (cache) => {
-      const hit = await cache.match(req);
+      const hit = await cache.match(req, { ignoreVary: true });
       const network = fetch(req)
         .then((res) => {
           if (res.ok) cache.put(req, res.clone());

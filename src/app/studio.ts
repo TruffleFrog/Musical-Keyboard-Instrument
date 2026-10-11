@@ -298,6 +298,16 @@ export class Studio {
     this.attached += 1;
     if (this.attached === 1) this.detach = this.bindDom();
     void this.engine.loadSamples();
+    // Build the audio graph while idle so the first key press is not the one
+    // that pays for creating the device, reverb impulse and buses (~40 ms).
+    // The context starts suspended and is resumed by the first gesture.
+    const idle: (cb: () => void) => void =
+      typeof window.requestIdleCallback === 'function'
+        ? (cb) => window.requestIdleCallback(cb, { timeout: 1500 })
+        : (cb) => void setTimeout(cb, 300);
+    idle(() => {
+      this.engine.init();
+    });
     return () => {
       this.attached -= 1;
       if (this.attached === 0 && this.detach) {

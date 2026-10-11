@@ -1,19 +1,42 @@
 # AGENTS.md — Keyboard Studio
 
-## Project Overview
-**Keyboard Studio** is a lightweight, low-latency web application built with TypeScript, React, Vite, and the Web Audio API that transforms a computer keyboard into an expressive multi-instrument musical studio.
+## Project overview
+**Keyboard Studio** turns a computer keyboard into a piano. TypeScript, React, Vite and the
+native Web Audio API; no backend. Read [ARCHITECTURE.md](ARCHITECTURE.md) first and
+[docs/REVIEW.md](docs/REVIEW.md) for the reasoning behind the current design.
 
 ## Commands
-- **Install dependencies**: `npm install`
-- **Start dev server**: `npm run dev`
-- **Typecheck**: `npm run typecheck`
-- **Run unit tests (Vitest)**: `npm test`
-- **Run E2E browser tests (Playwright)**: `npm run test:e2e`
-- **Production build**: `npm run build`
+- Install: `npm install`
+- Dev server: `npm run dev` (http://localhost:5173)
+- Typecheck: `npm run typecheck`
+- Unit/integration tests: `npm test`
+- E2E tests: `npm run test:e2e` (Playwright; also builds and previews for the offline test)
+- Production build: `npm run build`
+- Audio level report: `npm run probe:audio`; spectral sanity: `npm run probe:spectrum`
+- Screenshots: `npm run screenshots`
 
-## Engineering Guidelines
-1. **Low-Latency Audio First**: Trigger `audioEngine.noteOn` and `audioEngine.noteOff` directly in input event handlers (`keydown`, `keyup`, `pointerdown`, `pointerup`). Never gate audio synthesis on asynchronous network calls or heavy effects.
-2. **Prevent Stuck Notes**: Always clean up active voices when the window loses focus (`blur`), document visibility changes (`visibilitychange`), octave shifts occur, or the user triggers "Panic / All Notes Off".
-3. **Distinct Web Audio Synthesis**: Every instrument in `src/data/instruments.ts` and `src/audio/AudioEngine.ts` must synthesize genuinely distinct waveforms, harmonic partials, and filter envelopes.
-4. **Synchronized Visual Feedback**: Both user input and Demo Song playback must highlight virtual piano keys in real time (`data-active="true"`, `data-demo-target="true"`).
-5. **Testing**: Maintain unit test coverage in `src/**/*.test.ts(x)` for keyboard mapping, audio engine lifecycle, MIDI binary export, and UI state, plus Playwright E2E coverage in `tests/e2e/`.
+## Engineering guidelines
+1. **Layering.** `music/` is pure; only `audio/` creates Web Audio nodes; only
+   `app/studio.ts` listens to window keyboard events; components never schedule audio.
+2. **Latency first.** User notes call `engine.noteOn` synchronously from the input
+   handler. Never put network, storage or React rendering in that path.
+3. **No stuck notes.** Release/stop on `blur`, `visibilitychange`, panic, and when a mapped
+   key's `keyup` arrives. Voices end through `onended`, not timers.
+4. **Click-free envelopes.** Build amplitude envelopes from `setTargetAtTime` so releasing in
+   the middle of an attack cannot jump. Do not use `cancelAndHoldAtTime` (not in Firefox).
+5. **Stable layout.** Anything whose content changes at runtime (readouts, timers, chord
+   names, indicators) lives in a fixed-size box with clipped overflow, or is absolutely
+   positioned. Add a case to `tests/e2e/layout-stability.spec.ts` when you add dynamic UI.
+6. **Songs** are authored as parts in `src/music/songs.ts`; keep every part's bars summing to
+   the bar length (the tests enforce it) and the notes within C2–C7. Only public-domain
+   compositions; arrangements are original work.
+7. **Assets and licences.** Only redistributable audio with a verified licence, recorded in
+   `public/samples/**/ATTRIBUTION.txt` and the README. CC BY needs visible attribution.
+8. **Loudness.** If you add or change a voice, run `npm run probe:audio` and adjust
+   `INSTRUMENT_TRIM` so the instruments stay balanced and unclipped.
+9. **Tests.** New behaviour needs unit tests; UI/flow changes need a Playwright case.
+   Automated audio checks cannot judge sound quality: say what still needs listening.
+
+## Git workflow
+Work on a feature branch (`feat/…`, `fix/…`), commit only intended files, never force-push
+shared branches, and do not deploy without explicit owner approval.

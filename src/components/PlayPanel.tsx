@@ -65,14 +65,14 @@ export const PlayPanel: React.FC = () => {
     },
   ];
 
-  const pianoNote =
+  const pianoStatus =
     instrument !== 'piano'
-      ? null
+      ? ''
       : sampleState === 'ready'
-        ? 'Recorded piano loaded'
+        ? 'Piano samples ready'
         : sampleState === 'error'
-          ? 'Samples unavailable — using synthesised stand-in'
-          : 'Loading recorded piano…';
+          ? 'Samples unavailable'
+          : 'Loading piano…';
 
   return (
     <div className="deck deck-play" data-testid="play-panel">
@@ -136,6 +136,9 @@ export const PlayPanel: React.FC = () => {
       <section className="module module-perform" aria-labelledby="mod-perform">
         <header className="module-head">
           <h2 id="mod-perform">Keyboard</h2>
+          <span className="module-hint" data-testid="sample-status">
+            {pianoStatus}
+          </span>
         </header>
         <div className="field">
           <span className="field-label">Touch</span>
@@ -158,8 +161,8 @@ export const PlayPanel: React.FC = () => {
           onChange={(v) => studio.setShowNoteNames(v)}
           testId="toggle-note-names-btn"
         />
-        <p className="module-note" data-testid="sample-status">
-          {pianoNote ?? 'Click a key lower down for a harder strike.'}
+        <p className="module-note">
+          Click lower on a key for a harder strike; hold Space for sustain.
         </p>
       </section>
     </div>

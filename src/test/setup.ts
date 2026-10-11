@@ -200,9 +200,9 @@ Object.defineProperty(globalThis, 'OfflineAudioContext', {
   value: MockAudioContext,
 });
 
-// Samples cannot be fetched in unit tests; fail fast and quietly.
-globalThis.fetch = (() =>
-  Promise.reject(new Error('network disabled in tests'))) as typeof fetch;
+// Samples cannot be fetched in unit tests. Never settling keeps the load
+// state at "loading" instead of causing an asynchronous state update.
+globalThis.fetch = (() => new Promise<Response>(() => {})) as typeof fetch;
 
 HTMLCanvasElement.prototype.getContext = (() => ({
   setTransform() {},

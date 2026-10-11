@@ -10,14 +10,19 @@ function key(code: string, key: string, type: 'keyDown' | 'keyUp' = 'keyDown') {
 describe('Keyboard Studio app', () => {
   beforeEach(() => {
     window.localStorage.clear();
-    studio.panic();
-    studio.setTab('play');
-    studio.setSongMode('listen');
-    studio.setOctave(4);
-    studio.setInstrument('piano');
+    act(() => {
+      studio.panic();
+      studio.setTab('play');
+      studio.setSongMode('listen');
+      studio.setOctave(4);
+      studio.setInstrument('piano');
+    });
   });
   afterEach(() => {
-    studio.panic();
+    act(() => {
+      studio.stopRecording();
+      studio.panic();
+    });
   });
 
   it('lights keys and the readout for QWERTY chords, and clears on release', () => {
