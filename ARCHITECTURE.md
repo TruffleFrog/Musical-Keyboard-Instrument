@@ -1,10 +1,10 @@
 # Keyboard Studio — Architecture & Infrastructure Roadmap
 
-**Status:** planned, not implemented · **Last updated:** 2026-10-10
+**Status:** partially implemented — a playable app exists; see [§20](#20-current-implementation--infrastructure-status) · **Last updated:** 2026-10-10
 
-**Nature of this document:** a *proposed* architecture and roadmap. Nothing described here exists yet unless it appears in [§20 Current implementation & infrastructure status](#20-current-implementation--infrastructure-status). No package versions are chosen, no toolchain is installed, and no hosting is configured.
+**Nature of this document:** the planned architecture and roadmap, kept as the reference the code is measured against. Where the implementation differs, §20 and the decisions table (§21) say so, and the architecture *as built* is described in [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md). Passages written as plans (future tense, "proposed") are plans, not guarantees.
 
-> **Do not start implementation or infrastructure work from this document alone.** Building requires an explicit instruction from the repository owner (tracked as gate `G-01` in [TODO.md](TODO.md)).
+> **Implementation is authorized** (gate `G-01`, 2026-10-10). Work proceeds task by task through [TODO.md](TODO.md); releases remain manual (decision D9).
 
 Related documents: [README](README.md) · [Product & UI concept](docs/PRODUCT_CONCEPT.md) · [TODO / progress tracker](TODO.md) · [Agent rules](AGENTS.md)
 
@@ -56,17 +56,17 @@ The product behaviors and acceptance criteria live in [docs/PRODUCT_CONCEPT.md](
 | Area | Proposed choice | Why / boundary |
 | --- | --- | --- |
 | Language | **TypeScript, strict mode** | Shared typed event, note, song and settings contracts; no cross-language runtime |
-| App / build | **Vite, vanilla TypeScript template** | Small static app, fast dev server and build; revisit only if UI complexity warrants it |
-| UI | **Semantic HTML + modular CSS + SVG where useful** | Lightweight clickable keycaps and fluid layout; no heavyweight component framework or bitmap needed |
+| App / build | **Vite, vanilla TypeScript template** — *as built: Vite + TypeScript + React 18 (D12)* | Small static app, fast dev server and build; revisit only if UI complexity warrants it |
+| UI | **Semantic HTML + modular CSS + SVG where useful** — *as built: React components, one CSS file, lucide icons* | Lightweight clickable keycaps and fluid layout; no heavyweight component framework or bitmap needed |
 | Design | CSS custom properties (tokens), responsive grid/flex, restrained animation | Keyboard prominently centered; customization in collapsible sections |
 | State | Small typed store + typed event emitter | Explicit state ownership; no Redux, server-state or cache libraries |
 | Audio | **Native Web Audio API** (`AudioContext`, `OscillatorNode`, `AudioBufferSourceNode`, `GainNode`, `BiquadFilterNode`, `ConvolverNode`, `DelayNode`, `DynamicsCompressorNode`) | No external audio service; reusable envelopes and voices; add Tone.js only if measurement justifies it |
-| Sound assets | Built-in **synthesis first**, including synthesized percussion | Avoids sample licensing and large downloads; small licensed samples only if synthesis is judged inadequate |
+| Sound assets | Built-in **synthesis first**, including synthesized percussion — *as built: grand piano is sampled (Salamander, CC BY 3.0, ~1.4 MB; D14); everything else synthesised; percussion not yet built* | Avoids sample licensing and large downloads; small licensed samples only if synthesis is judged inadequate |
 | Demo timing | Transport/scheduler anchored to **`AudioContext.currentTime`**; song events authored in **beats** | One clock drives audio, key lighting and tab timeline |
 | Persistence | **`localStorage`** for small, versioned preferences, custom mappings and presets | No account or hosted storage; validate on load and tolerate blocked storage |
 | Recording | Typed note events → **Standard MIDI File** export; audio via `MediaStreamAudioDestinationNode` + `MediaRecorder` and/or offline WAV render | Local files only; detect supported audio MIME types instead of promising WAV/MP3 |
-| Tests | **Vitest** (unit/integration), **Playwright** (Chromium + Firefox E2E), `tsc --noEmit` | Deterministic music rules and input/timing regressions |
-| Quality | ESLint + Prettier; automated accessibility checks; manual listening | Modest dev tooling; no SaaS quality dashboards |
+| Tests | **Vitest** (unit/integration), **Playwright** (Chromium + Firefox E2E — *as built: Chromium only so far*), `tsc --noEmit` | Deterministic music rules and input/timing regressions |
+| Quality | ESLint + Prettier (*not yet added, P0-05*); automated accessibility checks; manual listening | Modest dev tooling; no SaaS quality dashboards |
 | Packages | npm, committed `package-lock.json`, current Node LTS | Reproducible installs via `npm ci`; exact versions chosen and recorded at implementation time |
 | Source + CI | GitHub, pull requests, GitHub Actions | Simple source control; typecheck/lint/unit/build/E2E gates |
 | Release hosting | **GitHub Pages** (static) as first choice, configured only on request, **manual deploy only** | Minimal infrastructure; no auto-deploy |
@@ -158,7 +158,7 @@ Songs are authored in **pitches and beats**, never in physical keys: tabs are *d
 
 ## 4. Repository structure and module organization
 
-This is a **target** layout, not a statement of what exists:
+This is a **target** layout, not a statement of what exists (the built layout, and its known deviations, are in [§20](#20-current-implementation--infrastructure-status) and [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md)):
 
 ```text
 /
@@ -466,7 +466,7 @@ Feature-detect rather than user-agent-sniff: Web Audio, `MediaRecorder`, `Offlin
 
 ## 14. Development environment and expected commands
 
-> **Not currently runnable.** The commands below are the *planned* interface. They do not exist until Phase 0 creates `package.json`.
+> **Runnable since 2026-10-10**, except `npm run lint` (ESLint/Prettier are not added yet — `P0-05`). Also available: `npm run probe:audio` (offline-render level report) and `npm run screenshots`.
 
 | Command | Purpose |
 | --- | --- |
@@ -500,7 +500,7 @@ Use a stubbed/instrumented `AudioContext` (injected via the `AudioClock`/factory
 
 ## 16. GitHub Actions CI strategy
 
-*Planned; no workflows exist today.*
+*Implemented 2026-10-10 in `.github/workflows/ci.yml`: typecheck → unit tests → build, plus a separate Chromium E2E job (including the offline production-build test); read-only token; no deploy steps. Still open: a lint step (`P0-05`) and Firefox E2E (`P0-07`).*
 
 - **PR checks** — trigger: `pull_request` targeting `main` (and optionally `push` to `main`, for verification only). Steps: checkout → set up Node (cache npm) → `npm ci` → typecheck → lint → unit tests → build. A second job runs Playwright on Chromium and Firefox and uploads the report/artifacts on failure.
 - Least privilege: `permissions: contents: read`; no `pull_request_target`; no secrets needed; pin third-party actions to a major version tag or commit SHA; use `concurrency` to cancel superseded runs.
@@ -527,7 +527,7 @@ Use a stubbed/instrumented `AudioContext` (injected via the `AudioClock`/factory
 | Versioning | Lightweight tags/changelog at release time; no auto-versioning bot |
 | Rollback | Re-run the deploy workflow on a previous tag/commit |
 
-Enabling GitHub Pages, creating the deploy workflow, and any custom domain are **explicit, owner-approved** steps tracked in Phase 5 of [TODO.md](TODO.md).
+Enabling GitHub Pages, creating the deploy workflow, and any custom domain are **explicit, owner-approved** steps tracked in Phase 5 of [TODO.md](TODO.md). The deploy workflow (`.github/workflows/deploy-pages.yml`) exists and is `workflow_dispatch`-only; owner approval (`G-03`) was given on 2026-10-10.
 
 ---
 
@@ -535,16 +535,27 @@ Enabling GitHub Pages, creating the deploy workflow, and any custom domain are *
 
 ### Dependency budget
 
-- **Runtime dependencies: none** (target). The app is TypeScript compiled by Vite using browser APIs.
-- **Development dependencies (expected):** TypeScript, Vite, Vitest (+ a DOM environment such as jsdom/happy-dom), Playwright, ESLint (+ typescript-eslint), Prettier; optionally an accessibility-testing helper. Each addition must be justified in its PR and reflected here.
+- **Runtime dependencies — target: none; as built: three (D12).**
+  - `react`, `react-dom` (18.x) — the UI has eight stateful components with live cross-component
+    state (held notes, learn progress, recording); a declarative renderer removed a class of
+    manual DOM-sync bugs. The revisit trigger in the original tradeoff ("component/state
+    complexity becomes hard to maintain") was met by the first implementation.
+  - `lucide-react` — tree-shaken SVG icons (about a dozen are used).
+  - Everything else (audio, scheduling, MIDI, storage, store) is hand-written on browser APIs.
+- **Development dependencies (as built):** TypeScript, Vite, `@vitejs/plugin-react`, Vitest 5 with
+  jsdom, Testing Library (`react`, `jest-dom`), Playwright. Not yet added: ESLint (+ typescript-eslint)
+  and Prettier (`P0-05`), an accessibility-testing helper (`P5-02`).
+- **Security:** `npm audit` reported 0 vulnerabilities when this was merged (Vitest was moved from
+  3.x to 5.x to clear advisories in its dev-only `tinypool` / `@vitest/mocker`). Each addition must be
+  justified in its PR and reflected here.
 
 ### Key tradeoffs
 
 | Decision | Chosen | Alternative | Consequence / revisit trigger |
 | --- | --- | --- | --- |
-| UI approach | Vanilla TS + HTML/CSS | React/Svelte/Vue | Fewer dependencies and faster start; revisit if component/state complexity becomes hard to maintain |
+| UI approach | Vanilla TS + HTML/CSS — *superseded by D12: React* | React/Svelte/Vue | Fewer dependencies and faster start; revisit if component/state complexity becomes hard to maintain |
 | Audio | Native Web Audio | Tone.js | Full control and zero dependency; more code to write. Revisit if scheduling/instrument work is demonstrably costly |
-| Sounds | Synthesized | Sampled soundfonts | No licensing or download size; less realistic piano. Revisit with properly licensed samples if quality is judged inadequate |
+| Sounds | Synthesized — *piano superseded by D14: sampled* | Sampled soundfonts | No licensing or download size; less realistic piano. Revisit with properly licensed samples if quality is judged inadequate |
 | Persistence | `localStorage` | IndexedDB | Simple and synchronous; limited size. IndexedDB only if saved recordings/projects are added |
 | Timing | Look-ahead on audio clock | `setTimeout`/`setInterval` playback | Slightly more code; required for accuracy |
 | Hosting | Manual-deploy GitHub Pages | Auto-deploy / preview deploys | Fewer surprises and no notification noise; one extra manual step per release |
@@ -580,33 +591,44 @@ At the start of each phase, pick an implementable vertical slice and its test pl
 
 ## 20. Current implementation & infrastructure status
 
-**As of 2026-10-10** (verified against the GitHub repository, not assumed):
+**As of 2026-10-10**, with the first application PR (#4). Items marked *not built* do not exist.
 
 ### Implementation
 
 | Area | Status |
 | --- | --- |
-| Application source (`src/`, `index.html`) | **Does not exist** |
-| `package.json`, lockfile, toolchain (TypeScript, Vite, Vitest, Playwright, ESLint) | **Not created / not installed** |
-| Interactive keyboard, audio engine, demo songs, recording, settings | **Not started** |
-| Tests | **None** |
-| Documentation | `README.md`, `docs/PRODUCT_CONCEPT.md`, `ARCHITECTURE.md`, `AGENTS.md`, `TODO.md` — planning only |
+| Application source | **Exists:** `src/` (TypeScript strict, React 18), `index.html`, `public/`. Built layout: [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) |
+| Toolchain | Node 24 LTS (`.nvmrc`), npm + `package-lock.json`, Vite 6, TypeScript 5.7, Vitest 5 + jsdom + Testing Library, Playwright (Chromium). **No ESLint / Prettier yet** (`P0-05`) |
+| Keyboard | 61-key piano keybed with computer-key legends and a marked 25-key QWERTY window; physical, pointer and multi-touch input; sustain (hold Space or latch); octave shift; panic. **Not** the QWERTY-shaped key map in the concept (**D13**) |
+| Audio engine | Native Web Audio: sampled grand piano + synthesised electric piano, polysynth, bass, chiptune, organ; per-instrument buses and effects, master limiter, voice cap with stealing, offline-renderable (`BaseAudioContext`) |
+| Demo songs | 8 public-domain multi-part arrangements with recorded provenance; audio-clock look-ahead player (tempo change, loop, part mute); Learn mode; note roll |
+| Customization | Instrument, 5 tone controls per instrument, touch, master volume, label toggles; persisted (schema v2, v1 migration). **Not built:** key remapping, alternate layouts, scales/transpose, presets, drums, global reset |
+| Recording / export | Takes with velocity and pedal, replay, rename, delete; MIDI export of takes and arrangements. **Not built:** audio export, echo, metronome |
+| Offline | Service worker caches the app and samples after one visit (`P6-08`, in part: no web-app manifest) |
+| Tests | 146 unit/integration (Vitest) and 76 E2E (Playwright/Chromium: layout stability at 4 viewports, flows, offline production build, offline-rendered audio checks). **Firefox E2E not configured** |
+| Documentation | `README.md`, `TODO.md`, `ARCHITECTURE.md`, `docs/IMPLEMENTATION.md`, `docs/PRODUCT_CONCEPT.md`, `docs/REVIEW.md`, `AGENTS.md` |
+
+### Known deviations from the planned architecture
+
+- **Module boundaries (§4).** Window-level key listeners and note orchestration live in `app/studio.ts`, and pointer handling in `components/Keyboard.tsx`; §4 reserves raw-event interpretation for `input/`. Extract an `input/` module when remapping (`P2-13`) is built. `transport/` and `recording/` are `playback/` and `app/`; `data/` holds the key map and instrument presets, while songs live in `music/songs.ts`.
+- **No `AudioClock` interface.** The player depends on the engine's context; tests inject a fake engine (an equivalent seam under a different name).
+- **Visual keyboard (D13).** Piano keybed, not a QWERTY-shaped key map.
+- **Song schema.** `music/song.ts` (parts + notation → beat-based notes, with required `provenance`) rather than the `Song` / `SongNote` contract sketched in §3.
+- **Settings.** A flat versioned preferences object, not the nested model in §9.
 
 ### Infrastructure
 
 | Item | Status |
 | --- | --- |
 | GitHub repository `TruffleFrog/Musical-Keyboard-Instrument` (public), default branch `main` | Exists |
-| Merge methods | Squash, merge-commit and rebase all currently allowed (repo defaults) |
-| Branch protection / rulesets on `main` | **None configured** |
-| GitHub Actions workflows (CI) | **None** |
-| GitHub Pages / any hosting / deployments / environments | **Not configured** |
+| Merge methods | Squash, merge-commit and rebase all allowed (repo defaults) |
+| Branch protection / rulesets on `main` | **None configured** (`P0-10` open — owner/admin action) |
+| GitHub Actions | `ci.yml` (PRs and pushes to `main`: typecheck, unit tests, build, Chromium E2E; `contents: read`; never deploys) and `deploy-pages.yml` (**`workflow_dispatch` only**) |
+| GitHub Pages | Owner approval given 2026-10-10 (`G-03`). Enabling Pages and the first manual deploy happen immediately after this PR merges and are recorded in the follow-up PR |
 | Custom domain, DNS, backend, database, secrets | **None, none planned** |
-| Dependabot version updates (`dependabot.yml`) | **Not configured** |
-| Dependabot alerts / security updates | **Disabled** (no dependencies exist yet) |
-| Secret scanning and push protection | **Enabled** (GitHub-side default for this public repository) |
-| Source-code license | **MIT** (decision D1, 2026-10-10); `LICENSE` file present |
-| Issues | None exist (feature is enabled); no project board has been set up |
+| Dependabot version updates (`dependabot.yml`) | **Not configured** (`P0-12`) |
+| Dependabot alerts / `npm audit` | `npm audit` clean (0 vulnerabilities) at merge |
+| Source-code license | **MIT** (D1); `LICENSE` present. Third-party audio: Salamander piano, CC BY 3.0 — attribution in `public/samples/piano/ATTRIBUTION.txt`, README and in-app help |
 
 When implementation or infrastructure changes, update this section in the **same PR** and link the PR. Do not rewrite long-term decisions elsewhere merely to match an incomplete feature.
 
@@ -614,7 +636,7 @@ When implementation or infrastructure changes, update this section in the **same
 
 ## 21. Decisions and open questions
 
-The repository owner delegated the open decisions D1–D11 to the assistant on **2026-10-10**; they are recorded below as **decided**. All are reversible by a documented PR (state date, reason, alternatives and evidence). Decisions that depend on measurement are marked *revisit*.
+The repository owner delegated the open decisions D1–D11 to the assistant on **2026-10-10**; they are recorded below as **decided**. D12–D16 record departures that arose when the first implementation was written at the owner's direction. All are reversible by a documented PR (state date, reason, alternatives and evidence). Decisions that depend on measurement are marked *revisit*.
 
 | # | Decision | Outcome | Status | Revisit when |
 | --- | --- | --- | --- | --- |
@@ -629,11 +651,18 @@ The repository owner delegated the open decisions D1–D11 to the assistant on *
 | D9 | Hosting and release cadence | **GitHub Pages, manual `workflow_dispatch` deploy only**; no auto-deploy, previews or custom domain. *Activation still requires owner approval (`G-03`)* | Decided (activation gated) | If the owner prefers another static host |
 | D10 | Background-tab and pause/resume behavior | **Pause on hidden; resume from next note boundary; no re-strike** (§8) | Decided | Phase 3 manual testing |
 | D11 | Branch protection and dependency automation | After CI exists (`P0-08`): protect `main` (PR + required CI checks); enable Dependabot **grouped, monthly** updates for npm and GitHub Actions, reviewed like any PR | Decided (action deferred until CI exists) | If it creates review noise |
+| D12 | UI framework | **React 18 + `lucide-react`** (three runtime deps) instead of vanilla TS. The first implementation was React; its state (held notes, learn progress, recording) is cross-cutting enough that rewriting to vanilla was not justified | Decided 2026-10-10 (departure from §2) | If bundle size or maintenance cost argues for vanilla TS (bundle ≈ 80 kB gzip) |
+| D13 | Visual keyboard | **Piano keybed with computer-key legends** and a marked 25-key QWERTY window, at the owner's direction for the redesign ("playable keyboard as the visual centerpiece", synth / digital-piano look). Songs can light keys outside the QWERTY range. The concept's QWERTY-shaped key map is **not built** | **Departure — owner to confirm**; concept §3 unchanged | If the QWERTY key-map view is wanted: add it as a second view |
+| D14 | Piano sound | **Sampled** *Salamander Grand Piano* (CC BY 3.0; 21 MP3s, ≈1.4 MB, re-pitched ≤ 1.5 semitones) because the synthesised piano was judged inadequate by the owner. All other instruments remain synthesised. Supersedes D2 for the piano only; completes `P6-05` for one instrument | Decided 2026-10-10 | If download size matters or a CC0 set of equal quality appears |
+| D15 | Songs | Authored as **multi-part notation** (melody / chords / bass), compiled to beat-based notes, **provenance required and validated**; arrangements original (MIT). Library of 8 | Decided 2026-10-10 | When song import (`P6-01`) is added |
+| D16 | Learn mode | "Wait for me" over the melody part, **octave-forgiving** (the right note name in any octave counts), optional accompaniment. Realises part of `P6-02` | Decided 2026-10-10 | Count-in, bar loop and speed presets remain open (`P6-02`) |
 
 ### Still owner-only (not decisions the assistant may take)
 
-- **`G-01`** — authorize implementation. Until the owner says so, work stays documentation-only.
-- **`G-03`** — approve the first public release / enabling GitHub Pages.
+- ~~`G-01`~~ — implementation authorized by the owner on 2026-10-10.
+- ~~`G-03`~~ — Pages / first release approved by the owner on 2026-10-10 (manual deploys only).
+- **D13** — confirm the piano-keybed departure, or request the QWERTY key-map view.
+- **`P0-10`** — enable branch protection on `main`.
 
 ## 22. References
 

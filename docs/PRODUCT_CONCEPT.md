@@ -1,6 +1,6 @@
 # Keyboard Studio — Product & UI Concept
 
-> **Status: planning only.** This document is a refined product idea, not an implementation plan approved for coding. No application has been built.
+> **Status:** product concept. A first implementation exists (2026-10-10) and follows this concept in part; see [Implementation notes](#implementation-notes-2026-10-10) at the end for what differs. The requirements below are unchanged.
 >
 > Related: [Architecture & roadmap](../ARCHITECTURE.md) · [TODO / progress tracker](../TODO.md) · [Agent rules](../AGENTS.md) · [README](../README.md)
 
@@ -199,6 +199,22 @@ The rationale, alternatives (including Tone.js, which is *not* currently planned
 9. All major UI states work on supported desktop browsers, and small viewports remain navigable.
 10. No credentials, backend, or upload is required to play a note.
 
+## Implementation notes (2026-10-10)
+
+The first implementation (see [docs/IMPLEMENTATION.md](IMPLEMENTATION.md) and [README](../README.md)) differs from this concept as follows. Differences are tracked as decisions D12–D16 in [ARCHITECTURE.md §21](../ARCHITECTURE.md#21-decisions-and-open-questions).
+
+**Departures**
+
+- **The keyboard visual (§2, §3, D13).** The built keyboard is a *piano keybed* (61 keys) with computer-key legends on the 25 keys the computer keyboard plays, rather than a QWERTY-shaped key map. It was built this way at the owner's direction for the redesign. The QWERTY key-map view described in §3 does **not** exist; the owner has not yet confirmed whether to add it as a second view.
+- **Sound (§4).** The grand piano is a licensed recording (Salamander, CC BY 3.0) rather than synthesised; everything else is synthesised.
+- **Songs (§5).** Eight multi-part arrangements (melody, chords, bass) instead of single-line tunes; no demo tab chips with key letters — songs are shown as a falling-note roll over the keyboard.
+
+**Added beyond the concept:** Learn mode (wait-for-me, octave-forgiving, optional accompaniment), a note roll, part mute / melody-only, offline caching.
+
+**Not built yet:** key remapping and alternate layouts, scales/transpose, drums, echo, metronome, presets, global reset, audio export, Firefox E2E.
+
+**Acceptance criteria (§11):** 1–3, 5–8 and 10 are met in spirit by the piano-keybed implementation (verified by unit and Chromium E2E tests, not yet by listening or on Firefox); 4 (mapping edits) is not applicable until remapping exists; 9 is partly verified.
+
 ## Current project state
 
-**Concept and UI specification only.** Planning documents ([architecture](../ARCHITECTURE.md), [TODO](../TODO.md), [agent rules](../AGENTS.md)) exist; no application code, packages, deployment, CI, or runnable demo exist. Those are explicitly out of scope until the owner requests development.
+A playable application exists and is documented in [README.md](../README.md), [TODO.md](../TODO.md) and [ARCHITECTURE.md §20](../ARCHITECTURE.md#20-current-implementation--infrastructure-status). Hosting is configured for manual deploys only.
