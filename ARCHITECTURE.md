@@ -591,7 +591,7 @@ At the start of each phase, pick an implementable vertical slice and its test pl
 
 ## 20. Current implementation & infrastructure status
 
-**As of 2026-10-10**, with the first application PR (#4). Items marked *not built* do not exist.
+**As of 2026-10-10**, after the first application PR (#4) and the first manual Pages deploy. Items marked *not built* do not exist.
 
 ### Implementation
 
@@ -623,8 +623,8 @@ At the start of each phase, pick an implementable vertical slice and its test pl
 | GitHub repository `TruffleFrog/Musical-Keyboard-Instrument` (public), default branch `main` | Exists |
 | Merge methods | Squash, merge-commit and rebase all allowed (repo defaults) |
 | Branch protection / rulesets on `main` | **None configured** (`P0-10` open — owner/admin action) |
-| GitHub Actions | `ci.yml` (PRs and pushes to `main`: typecheck, unit tests, build, Chromium E2E; `contents: read`; never deploys) and `deploy-pages.yml` (**`workflow_dispatch` only**) |
-| GitHub Pages | Owner approval given 2026-10-10 (`G-03`). Enabling Pages and the first manual deploy happen immediately after this PR merges and are recorded in the follow-up PR |
+| GitHub Actions | `ci.yml` (PRs and pushes to `main`: typecheck, unit tests, build, Chromium E2E; `contents: read`; never deploys) — green on PR #4 — and `deploy-pages.yml` (**`workflow_dispatch` only**) |
+| GitHub Pages | **Enabled 2026-10-10** (build type: GitHub Actions) after owner approval (`G-03`). Live at <https://trufflefrog.github.io/Musical-Keyboard-Instrument/>; published only by a manual run of `deploy-pages.yml` (first run 38110158269, verified with `scripts/smoke-url.mjs`) |
 | Custom domain, DNS, backend, database, secrets | **None, none planned** |
 | Dependabot version updates (`dependabot.yml`) | **Not configured** (`P0-12`) |
 | Dependabot alerts / `npm audit` | `npm audit` clean (0 vulnerabilities) at merge |
